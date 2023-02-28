@@ -2,12 +2,15 @@
 exports.__esModule = true;
 var ponconjs_1 = require("ponconjs");
 var querystring = require("querystring");
+require("hls.js");
 /** 配置信息 */
 var config = {
-    api: 'https://ccc5570db0b64bbdaf28c5d861a9886b.apig.cn-south-1.huaweicloudapis.com'
+    api: 'https://b532b01e67674081ae52faf978e192e1.apig.cn-south-1.huaweicloudapis.com',
+    siteName: 'AVIN 视频',
+    canPlay: false
 };
 var poncon = new ponconjs_1["default"]();
-poncon.setPageList(['home', 'video', 'about', 'female', 'type']);
+poncon.setPageList(['home', 'video', 'about', 'female', 'type', 'play']);
 poncon.pages.home.data.types = [
     { type_id: '', name: '全部' },
     { type_id: '1043', name: '国产自拍' },
@@ -22,6 +25,9 @@ changeActiveMenu();
 window.addEventListener('hashchange', function (event) {
     changeActiveMenu();
 });
+window.addEventListener('click', function () {
+    config.canPlay = true;
+});
 request('/login/api/login', {
     channel_id: 3000,
     device_id: 'apee'
@@ -31,23 +37,64 @@ request('/login/api/login', {
 poncon.setPage('home', function (dom, args, pageData) {
     var _a, _b;
     var ele_type_list = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
-    ele_type_list.innerHTML = (function () {
-        var html = '';
-        pageData.types.forEach(function (type) {
-            html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.type_id, "\" href=\"#/home/").concat(type.type_id, "\">").concat(type.name, "</a>");
-        });
-        return html;
-    })();
+    if (!pageData.load) {
+        ele_type_list.innerHTML = (function () {
+            var html = '';
+            pageData.types.forEach(function (type) {
+                html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.type_id, "\" href=\"#/home/").concat(type.type_id, "\">").concat(type.name, "</a>");
+            });
+            return html;
+        })();
+    }
     var now_type_id = args[0] || '';
     var eles = ele_type_list === null || ele_type_list === void 0 ? void 0 : ele_type_list.querySelectorAll('[data-type-id]');
     eles.forEach(function (ele) {
         ele.classList.remove('btn-secondary');
         ele.classList.add('btn-outline-secondary');
+        if (!pageData.load) {
+            ele.addEventListener('click', function () {
+                poncon.pages.home.data.load = false;
+            });
+        }
     });
     var now_ele = ele_type_list === null || ele_type_list === void 0 ? void 0 : ele_type_list.querySelector("[data-type-id=\"".concat(now_type_id, "\"]"));
     (_a = now_ele === null || now_ele === void 0 ? void 0 : now_ele.classList) === null || _a === void 0 ? void 0 : _a.remove('btn-outline-secondary');
     (_b = now_ele === null || now_ele === void 0 ? void 0 : now_ele.classList) === null || _b === void 0 ? void 0 : _b.add('btn-secondary');
-    loadVideoList(now_type_id, 0, 24);
+    document.title = (now_ele === null || now_ele === void 0 ? void 0 : now_ele.innerText) + ' - ' + config.siteName;
+    pageData.load = true;
+    if (!pageData.request) {
+        loadVideoList(now_type_id, 0, 24);
+    }
+});
+poncon.setPage('play', function (dom, args, pageData) {
+    if (pageData.load) {
+        return;
+    }
+    var hls = new Hls();
+    var videoId = args[0];
+    var videoEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('video');
+    videoEle.src = '';
+    request('/video/view/info', {
+        uid: config.user_info.user_id,
+        session: config.user_info.session,
+        video_id: videoId
+    }, function (data) {
+        pageData.load = true;
+        var videoUrl = data.data.video.href;
+        var videoTitle = data.data.video.name;
+        var videoTitleEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('.videoTitle');
+        videoTitleEle.innerHTML = videoTitle;
+        if (Hls.isSupported()) {
+            hls.loadSource(videoUrl);
+            hls.attachMedia(videoEle);
+        }
+        else if (videoEle === null || videoEle === void 0 ? void 0 : videoEle.canPlayType('application/vnd.apple.mpegurl')) {
+            videoEle.src = videoUrl;
+        }
+        if (config.canPlay) {
+            videoEle === null || videoEle === void 0 ? void 0 : videoEle.play();
+        }
+    });
 });
 poncon.start();
 /**
@@ -59,6 +106,8 @@ poncon.start();
 function loadVideoList(type_id, page, pageSize) {
     if (page === void 0) { page = 0; }
     if (pageSize === void 0) { pageSize = 24; }
+    var listEle = document.querySelector('.poncon-home .video-list');
+    listEle.innerHTML = '';
     request('/video/view/list', {
         uid: config.user_info.user_id,
         session: config.user_info.session,
@@ -73,9 +122,18 @@ function loadVideoList(type_id, page, pageSize) {
         var html = (function (list) {
             var html = '';
             list.forEach(function (item) {
-                html += "";
+                if (!item.href)
+                    return;
+                html += "\n                <div class=\"col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow h-100\" href=\"#/play/".concat(item.id, "\">\n                        <div class=\"ratio ratio-16x9\">\n                            <img src=\"").concat(changeToHttp(item.href_image), "\" alt=\"").concat(item.name, "\" class=\"card-img-top\">\n                        </div>\n                        <div class=\"card-body d-flex flex-column\">\n                            <div class=\"h5 card-title multi-line videoTitle\">").concat(item.name, "</div>\n                            <div class=\"card-text small text-muted d-flex mb-2 mt-auto\">\n                                <span class=\"me-auto\"><span class=\"text-success\">").concat(parseDuration(item.duration), "</span></span>\n                                <span>").concat(item.performer, "</span>\n                            </div>\n                            <div class=\"publish-time small text-muted\">").concat(item.update_time, "</div>\n                        </div>\n                    </a>\n                </div>");
             });
+            return html;
         })(list);
+        listEle.innerHTML = html;
+        listEle.querySelectorAll('.card').forEach(function (ele) {
+            ele.addEventListener('click', function () {
+                poncon.pages.play.data.load = false;
+            });
+        });
     });
 }
 /**
@@ -113,4 +171,18 @@ function changeActiveMenu() {
     });
     var activeEle = document.querySelector(".sidebar .menu .item-".concat(target));
     activeEle === null || activeEle === void 0 ? void 0 : activeEle.classList.add('active');
+}
+function parseDuration(duration) {
+    var hour = Math.floor(duration / 3600);
+    var min = Math.floor((duration - hour * 3600) / 60);
+    var sec = duration - hour * 3600 - min * 60;
+    var str = '';
+    str += hour > 0 ? "".concat(hour, " \u65F6 ") : '';
+    str += min > 0 ? "".concat(min, " \u5206 ") : '';
+    str += sec > 0 ? "".concat(sec, " \u79D2") : '';
+    return str;
+}
+/** 将 URL 的协议改成 HTTP */
+function changeToHttp(url) {
+    return url.replace(/^https?:/, 'http:');
 }

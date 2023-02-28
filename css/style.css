@@ -3,6 +3,32 @@ a {
     color: var(--bs-dark);
 }
 
+/* 对于单行文本，使用以下CSS */
+.single-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 对于多行文本，使用以下CSS */
+.multi-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* 将行数设置为2 */
+    -webkit-box-orient: vertical;
+}
+
+.hover-shadow {
+    transition: .3s box-shadow;
+    cursor: pointer;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+}
+
 .root {
     position: fixed;
     top: 0;
@@ -48,4 +74,16 @@ a {
 
 .poncon-home .type-list :not(:last-child) {
     margin-right: 10px;
+}
+
+.poncon-home .video-list .videoTitle {
+    letter-spacing: 1px;
+}
+
+.ls-1 {
+    letter-spacing: 1px;
+}
+
+.poncon-home .type-list::-webkit-scrollbar {
+    width: 0;
 }
