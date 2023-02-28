@@ -32,9 +32,14 @@ a {
     background-color: var(--bs-gray-200);
 }
 
+.sidebar .menu .item.active {
+    background-color: var(--bs-gray-300);
+}
+
 .sidebar .menu .item:active {
     background-color: var(--bs-gray-400);
 }
+
 
 .body {
     flex: 1;

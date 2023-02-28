@@ -22,6 +22,12 @@ poncon.pages.home.data.types = [
     { type_id: '1912', name: '国产 AV' },
     { type_id: '1891', name: '经典三级' },
 ]
+
+changeActiveMenu()
+window.addEventListener('hashchange', (event) => {
+    changeActiveMenu()
+})
+
 request('/login/api/login', {
     channel_id: 3000,
     device_id: 'apee'
@@ -31,16 +37,25 @@ request('/login/api/login', {
 
 
 
+
 poncon.setPage('home', (dom, args, pageData) => {
     const ele_type_list = dom?.querySelector('.type-list') as HTMLElement
     ele_type_list.innerHTML = ((): string => {
         let html = ''
         pageData.types.forEach((type: { type_id: number | null, name: string }) => {
-            html += `<a class="btn btn-outline-secondary" href="#/home/${type.type_id}">${type.name}</a>`
+            html += `<a class="btn btn-outline-secondary" data-type-id="${type.type_id}" href="#/home/${type.type_id}">${type.name}</a>`
         })
         return html
     })()
     const now_type_id = (args as string[])[0] || ''
+    const eles = ele_type_list?.querySelectorAll<HTMLElement>('[data-type-id]')
+    eles.forEach(ele => {
+        ele.classList.remove('btn-secondary')
+        ele.classList.add('btn-outline-secondary')
+    })
+    const now_ele = ele_type_list?.querySelector(`[data-type-id="${now_type_id}"]`)
+    now_ele?.classList?.remove('btn-outline-secondary')
+    now_ele?.classList?.add('btn-secondary')
     loadVideoList(now_type_id, 0, 24)
 })
 poncon.start()
@@ -63,7 +78,13 @@ function loadVideoList(type_id: string, page: number = 0, pageSize: number = 24)
         page: page + 1,
         page_size: pageSize,
     }, (data) => {
-        console.log(data)
+        const list = data.data.list as any[]
+        const html = ((list) => {
+            let html = ''
+            list.forEach(item => {
+                html += ``
+            })
+        })(list)
     })
 }
 
@@ -88,10 +109,26 @@ function request(
     xhr.open('POST', config.api + path, async)
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
     xhr.send(content)
-    if (!async) return success(JSON.parse(xhr.responseText))
-    xhr.onreadystatechange = () => {
+    /** 判断请求是否完成 */
+    function response() {
         if (xhr.status == 200 && xhr.readyState == 4) {
             success(JSON.parse(xhr.responseText))
         }
     }
+    if (!async) return response()
+    xhr.onreadystatechange = () => {
+        response()
+    }
+}
+
+
+/** 修改导航栏激活状态 */
+function changeActiveMenu() {
+    const target = location.hash.split('/')[1] || 'home'
+    const eles = document.querySelectorAll<HTMLElement>('.sidebar .menu .item')
+    eles.forEach(ele => {
+        ele.classList.remove('active')
+    })
+    const activeEle = document.querySelector(`.sidebar .menu .item-${target}`)
+    activeEle?.classList.add('active')
 }
