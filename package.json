@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "pjax": "^0.2.8",
+    "ponconjs": "^1.1.6"
+  },
+  "scripts": {
+    "build": "browserify js/index.js -o dist/bundle.js"
+  }
+}
