@@ -72,7 +72,8 @@ a {
     height: 100%;
 }
 
-.poncon-home .type-list :not(:last-child) {
+.poncon-home .type-list :not(:last-child),
+.poncon-type .type-list :not(:last-child) {
     margin-right: 10px;
 }
 
@@ -84,6 +85,7 @@ a {
     letter-spacing: 1px;
 }
 
-.poncon-home .type-list::-webkit-scrollbar {
-    width: 0;
+.poncon-home .type-list::-webkit-scrollbar,
+.poncon-type .type-list::-webkit-scrollbar {
+    height: 0;
 }

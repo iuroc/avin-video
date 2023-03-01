@@ -7,7 +7,7 @@ const config: {
     /** 后端请求接口地址 */
     api: string,
     /** 身份信息 */
-    user_info?: any,
+    userInfo?: any,
     /** 站点名称 */
     siteName: string,
     /** 用户是否已经和页面交互，该值可判断是否自动播放视频 */
@@ -25,14 +25,14 @@ const dataCache: {
 const poncon = new Poncon()
 poncon.setPageList(['home', 'video', 'about', 'female', 'type', 'play'])
 poncon.pages.home.data.types = [
-    { type_id: '', name: '全部' },
-    { type_id: '1043', name: '国产自拍' },
-    { type_id: '1901', name: '亚洲有码' },
-    { type_id: '1042', name: '亚洲无码' },
-    { type_id: '1029', name: '成人动漫' },
-    { type_id: '1045', name: '欧美情色' },
-    { type_id: '1912', name: '国产 AV' },
-    { type_id: '1891', name: '经典三级' },
+    { typeId: '', name: '全部' },
+    { typeId: '1043', name: '国产自拍' },
+    { typeId: '1901', name: '亚洲有码' },
+    { typeId: '1042', name: '亚洲无码' },
+    { typeId: '1029', name: '成人动漫' },
+    { typeId: '1045', name: '欧美情色' },
+    { typeId: '1912', name: '国产 AV' },
+    { typeId: '1891', name: '经典三级' },
 ]
 
 changeActiveMenu()
@@ -48,25 +48,25 @@ request('/login/api/login', {
     channel_id: 3000,
     device_id: 'apee'
 }, (data) => {
-    config.user_info = data.data
+    config.userInfo = data.data
 }, false)
 
 
 
 
 poncon.setPage('home', (dom, args, pageData) => {
-    const ele_type_list = dom?.querySelector('.type-list') as HTMLElement
+    const eleTypeList = dom?.querySelector('.type-list') as HTMLElement
     if (!pageData.load) {
-        ele_type_list.innerHTML = ((): string => {
+        eleTypeList.innerHTML = ((): string => {
             let html = ''
-            pageData.types.forEach((type: { type_id: number | null, name: string }) => {
-                html += `<a class="btn btn-outline-secondary" data-type-id="${type.type_id}" href="#/home/${type.type_id}">${type.name}</a>`
+            pageData.types.forEach((type: { typeId: number | null, name: string }) => {
+                html += `<a class="btn btn-outline-secondary" data-type-id="${type.typeId}" href="#/home/${type.typeId}">${type.name}</a>`
             })
             return html
         })()
     }
-    const now_type_id = (args as string[])[0] || ''
-    const eles = ele_type_list?.querySelectorAll<HTMLElement>('[data-type-id]')
+    const nowTypeId = (args as string[])[0] || ''
+    const eles = eleTypeList?.querySelectorAll<HTMLElement>('[data-type-id]')
     eles.forEach(ele => {
         ele.classList.remove('btn-secondary')
         ele.classList.add('btn-outline-secondary')
@@ -76,12 +76,16 @@ poncon.setPage('home', (dom, args, pageData) => {
             })
         }
     })
-    const now_ele = ele_type_list?.querySelector(`[data-type-id="${now_type_id}"]`) as HTMLDivElement
-    now_ele?.classList?.remove('btn-outline-secondary')
-    now_ele?.classList?.add('btn-secondary')
-    document.title = now_ele?.innerText + ' - ' + config.siteName
+    eleTypeList.addEventListener('wheel', function (event) {
+        event.preventDefault()
+        animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600)
+    })
+    const nowEle = eleTypeList?.querySelector(`[data-type-id="${nowTypeId}"]`) as HTMLDivElement
+    nowEle?.classList?.remove('btn-outline-secondary')
+    nowEle?.classList?.add('btn-secondary')
+    document.title = nowEle?.innerText + ' - ' + config.siteName
     pageData.load = true
-    loadVideoList(now_type_id, 0, 24)
+    loadVideoList(nowTypeId, 0, 24)
 })
 poncon.setPage('play', (dom, args, pageData) => {
     if (pageData.load) {
@@ -92,8 +96,8 @@ poncon.setPage('play', (dom, args, pageData) => {
     const videoEle = dom?.querySelector('video') as HTMLVideoElement
     videoEle.src = ''
     const postData = {
-        uid: config.user_info.user_id,
-        session: config.user_info.session,
+        uid: config.userInfo.user_id,
+        session: config.userInfo.session,
         video_id: videoId
     }
     const dataCacheName = JSON.stringify({
@@ -125,25 +129,71 @@ poncon.setPage('play', (dom, args, pageData) => {
         }
     }
 })
+
+poncon.setPage('type', (dom, args, pageData) => {
+    const postData = {
+        uid: config.userInfo.user_id,
+        session: config.userInfo.session,
+        is_review: 0,
+        page: 1,
+        page_size: 32
+    }
+    const dataCacheName = JSON.stringify({
+        path: '/video/label/type_group',
+        postData: postData
+    })
+    if (dataCache[dataCacheName]) {
+        runData(dataCache[dataCacheName])
+    } else {
+        request('/video/label/type_group', postData, (data) => {
+            dataCache[dataCacheName] = data
+            runData(data)
+        })
+    }
+    function runData(data: any) {
+        const typeList = data.data
+        const typeListEle = dom?.querySelector('.type-list') as HTMLDivElement
+        if (!dataCache[dataCacheName]) {
+            typeListEle.innerHTML = ((typeList) => {
+                let html = ''
+                typeList.forEach((type: {
+                    id: number,
+                    name: string
+                }) => {
+                    html += `<a class="btn btn-outline-secondary" data-type-id="${type.id}" href="#/type/${type.id}">${type.name}</a>`
+                })
+                return html
+            })(typeList)
+            typeListEle.addEventListener('wheel', function (event) {
+                event.preventDefault()
+                animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600)
+            })
+            const typeId = args && args[0]
+            console.log('准备加载子类列表，父类 ID: ' + typeId)
+
+        }
+    }
+})
+declare function getEventListeners(ele: HTMLElement): any
 poncon.start()
 
 
 /**
  * 加载视频列表
- * @param type_id 分类 ID
+ * @param typeId 分类 ID
  * @param page 页码 初始值为 0
  * @param pageSize 每页加载数量
  */
-function loadVideoList(type_id: string, page: number = 0, pageSize: number = 24) {
+function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24) {
     const listEle = document.querySelector('.poncon-home .video-list') as HTMLElement
     listEle.innerHTML = ''
     const postData = {
-        uid: config.user_info.user_id,
-        session: config.user_info.session,
+        uid: config.userInfo.user_id,
+        session: config.userInfo.session,
         is_review: 0,
         is_new: 1,
         v: 0,
-        label_id: type_id,
+        label_id: typeId,
         page: page + 1,
         page_size: pageSize,
     }
@@ -274,4 +324,28 @@ function parseDuration(duration: number) {
 /** 将 URL 的协议改成 HTTP */
 function changeToHttp(url: string) {
     return url.replace(/^https?:/, 'http:')
+}
+
+/** 水平滚动条 */
+function animateScrollLeft(element: HTMLElement, to: number, duration: number) {
+    const start = element.scrollLeft
+    const change = to - start
+    let currentTime = 0
+    const increment = 20
+
+    function animate() {
+        currentTime += increment
+        var val = easeInOutQuad(currentTime, start, change, duration)
+        element.scrollLeft = val
+        if (currentTime < duration) {
+            requestAnimationFrame(animate)
+        }
+    }
+    function easeInOutQuad(t: number, b: number, c: number, d: number) {
+        t /= d / 2
+        if (t < 1) return c / 2 * t * t + b
+        t--
+        return -c / 2 * (t * (t - 2) - 1) + b
+    }
+    animate()
 }

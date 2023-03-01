@@ -14,14 +14,14 @@ var dataCache = {};
 var poncon = new ponconjs_1["default"]();
 poncon.setPageList(['home', 'video', 'about', 'female', 'type', 'play']);
 poncon.pages.home.data.types = [
-    { type_id: '', name: '全部' },
-    { type_id: '1043', name: '国产自拍' },
-    { type_id: '1901', name: '亚洲有码' },
-    { type_id: '1042', name: '亚洲无码' },
-    { type_id: '1029', name: '成人动漫' },
-    { type_id: '1045', name: '欧美情色' },
-    { type_id: '1912', name: '国产 AV' },
-    { type_id: '1891', name: '经典三级' },
+    { typeId: '', name: '全部' },
+    { typeId: '1043', name: '国产自拍' },
+    { typeId: '1901', name: '亚洲有码' },
+    { typeId: '1042', name: '亚洲无码' },
+    { typeId: '1029', name: '成人动漫' },
+    { typeId: '1045', name: '欧美情色' },
+    { typeId: '1912', name: '国产 AV' },
+    { typeId: '1891', name: '经典三级' },
 ];
 changeActiveMenu();
 window.addEventListener('hashchange', function (event) {
@@ -34,22 +34,22 @@ request('/login/api/login', {
     channel_id: 3000,
     device_id: 'apee'
 }, function (data) {
-    config.user_info = data.data;
+    config.userInfo = data.data;
 }, false);
 poncon.setPage('home', function (dom, args, pageData) {
     var _a, _b;
-    var ele_type_list = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
+    var eleTypeList = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
     if (!pageData.load) {
-        ele_type_list.innerHTML = (function () {
+        eleTypeList.innerHTML = (function () {
             var html = '';
             pageData.types.forEach(function (type) {
-                html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.type_id, "\" href=\"#/home/").concat(type.type_id, "\">").concat(type.name, "</a>");
+                html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.typeId, "\" href=\"#/home/").concat(type.typeId, "\">").concat(type.name, "</a>");
             });
             return html;
         })();
     }
-    var now_type_id = args[0] || '';
-    var eles = ele_type_list === null || ele_type_list === void 0 ? void 0 : ele_type_list.querySelectorAll('[data-type-id]');
+    var nowTypeId = args[0] || '';
+    var eles = eleTypeList === null || eleTypeList === void 0 ? void 0 : eleTypeList.querySelectorAll('[data-type-id]');
     eles.forEach(function (ele) {
         ele.classList.remove('btn-secondary');
         ele.classList.add('btn-outline-secondary');
@@ -59,12 +59,16 @@ poncon.setPage('home', function (dom, args, pageData) {
             });
         }
     });
-    var now_ele = ele_type_list === null || ele_type_list === void 0 ? void 0 : ele_type_list.querySelector("[data-type-id=\"".concat(now_type_id, "\"]"));
-    (_a = now_ele === null || now_ele === void 0 ? void 0 : now_ele.classList) === null || _a === void 0 ? void 0 : _a.remove('btn-outline-secondary');
-    (_b = now_ele === null || now_ele === void 0 ? void 0 : now_ele.classList) === null || _b === void 0 ? void 0 : _b.add('btn-secondary');
-    document.title = (now_ele === null || now_ele === void 0 ? void 0 : now_ele.innerText) + ' - ' + config.siteName;
+    eleTypeList.addEventListener('wheel', function (event) {
+        event.preventDefault();
+        animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
+    });
+    var nowEle = eleTypeList === null || eleTypeList === void 0 ? void 0 : eleTypeList.querySelector("[data-type-id=\"".concat(nowTypeId, "\"]"));
+    (_a = nowEle === null || nowEle === void 0 ? void 0 : nowEle.classList) === null || _a === void 0 ? void 0 : _a.remove('btn-outline-secondary');
+    (_b = nowEle === null || nowEle === void 0 ? void 0 : nowEle.classList) === null || _b === void 0 ? void 0 : _b.add('btn-secondary');
+    document.title = (nowEle === null || nowEle === void 0 ? void 0 : nowEle.innerText) + ' - ' + config.siteName;
     pageData.load = true;
-    loadVideoList(now_type_id, 0, 24);
+    loadVideoList(nowTypeId, 0, 24);
 });
 poncon.setPage('play', function (dom, args, pageData) {
     if (pageData.load) {
@@ -75,8 +79,8 @@ poncon.setPage('play', function (dom, args, pageData) {
     var videoEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('video');
     videoEle.src = '';
     var postData = {
-        uid: config.user_info.user_id,
-        session: config.user_info.session,
+        uid: config.userInfo.user_id,
+        session: config.userInfo.session,
         video_id: videoId
     };
     var dataCacheName = JSON.stringify({
@@ -110,25 +114,64 @@ poncon.setPage('play', function (dom, args, pageData) {
         }
     }
 });
+poncon.setPage('type', function (dom, args, pageData) {
+    var postData = {
+        uid: config.userInfo.user_id,
+        session: config.userInfo.session,
+        is_review: 0,
+        page: 1,
+        page_size: 32
+    };
+    var dataCacheName = JSON.stringify({
+        path: '/video/label/type_group',
+        postData: postData
+    });
+    if (dataCache[dataCacheName]) {
+        runData(dataCache[dataCacheName]);
+    }
+    else {
+        request('/video/label/type_group', postData, function (data) {
+            dataCache[dataCacheName] = data;
+            runData(data);
+        });
+    }
+    function runData(data) {
+        var typeList = data.data;
+        var typeListEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
+        typeListEle.innerHTML = (function (typeList) {
+            var html = '';
+            typeList.forEach(function (type) {
+                html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.id, "\" href=\"#/type/").concat(type.id, "\">").concat(type.name, "</a>");
+            });
+            return html;
+        })(typeList);
+        function wheelEvent(event) {
+            event.preventDefault();
+            animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
+        }
+        typeListEle.removeEventListener('wheel', wheelEvent);
+        typeListEle.addEventListener('wheel', wheelEvent);
+    }
+});
 poncon.start();
 /**
  * 加载视频列表
- * @param type_id 分类 ID
+ * @param typeId 分类 ID
  * @param page 页码 初始值为 0
  * @param pageSize 每页加载数量
  */
-function loadVideoList(type_id, page, pageSize) {
+function loadVideoList(typeId, page, pageSize) {
     if (page === void 0) { page = 0; }
     if (pageSize === void 0) { pageSize = 24; }
     var listEle = document.querySelector('.poncon-home .video-list');
     listEle.innerHTML = '';
     var postData = {
-        uid: config.user_info.user_id,
-        session: config.user_info.session,
+        uid: config.userInfo.user_id,
+        session: config.userInfo.session,
         is_review: 0,
         is_new: 1,
         v: 0,
-        label_id: type_id,
+        label_id: typeId,
         page: page + 1,
         page_size: pageSize
     };
@@ -218,4 +261,27 @@ function parseDuration(duration) {
 /** 将 URL 的协议改成 HTTP */
 function changeToHttp(url) {
     return url.replace(/^https?:/, 'http:');
+}
+/** 水平滚动条 */
+function animateScrollLeft(element, to, duration) {
+    var start = element.scrollLeft;
+    var change = to - start;
+    var currentTime = 0;
+    var increment = 20;
+    function animate() {
+        currentTime += increment;
+        var val = easeInOutQuad(currentTime, start, change, duration);
+        element.scrollLeft = val;
+        if (currentTime < duration) {
+            requestAnimationFrame(animate);
+        }
+    }
+    function easeInOutQuad(t, b, c, d) {
+        t /= d / 2;
+        if (t < 1)
+            return c / 2 * t * t + b;
+        t--;
+        return -c / 2 * (t * (t - 2) - 1) + b;
+    }
+    animate();
 }
