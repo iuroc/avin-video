@@ -153,7 +153,7 @@ poncon.setPage('type', (dom, args, pageData) => {
     function runData(data: any) {
         const typeList = data.data
         const typeListEle = dom?.querySelector('.type-list') as HTMLDivElement
-        if (!dataCache[dataCacheName]) {
+        if (!pageData.load) {
             typeListEle.innerHTML = ((typeList) => {
                 let html = ''
                 typeList.forEach((type: {
@@ -172,6 +172,7 @@ poncon.setPage('type', (dom, args, pageData) => {
             console.log('准备加载子类列表，父类 ID: ' + typeId)
 
         }
+        pageData.load = true
     }
 })
 declare function getEventListeners(ele: HTMLElement): any

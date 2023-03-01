@@ -138,7 +138,7 @@ poncon.setPage('type', function (dom, args, pageData) {
     function runData(data) {
         var typeList = data.data;
         var typeListEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
-        if (!dataCache[dataCacheName]) {
+        if (!pageData.load) {
             typeListEle.innerHTML = (function (typeList) {
                 var html = '';
                 typeList.forEach(function (type) {
@@ -153,6 +153,7 @@ poncon.setPage('type', function (dom, args, pageData) {
             var typeId = args && args[0];
             console.log('准备加载子类列表，父类 ID: ' + typeId);
         }
+        pageData.load = true;
     }
 });
 poncon.start();
