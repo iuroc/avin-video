@@ -9,6 +9,8 @@ var config = {
     siteName: 'AVIN 视频',
     canPlay: false
 };
+/** 缓存数据 */
+var dataCache = {};
 var poncon = new ponconjs_1["default"]();
 poncon.setPageList(['home', 'video', 'about', 'female', 'type', 'play']);
 poncon.pages.home.data.types = [
@@ -62,9 +64,7 @@ poncon.setPage('home', function (dom, args, pageData) {
     (_b = now_ele === null || now_ele === void 0 ? void 0 : now_ele.classList) === null || _b === void 0 ? void 0 : _b.add('btn-secondary');
     document.title = (now_ele === null || now_ele === void 0 ? void 0 : now_ele.innerText) + ' - ' + config.siteName;
     pageData.load = true;
-    if (!pageData.request) {
-        loadVideoList(now_type_id, 0, 24);
-    }
+    loadVideoList(now_type_id, 0, 24);
 });
 poncon.setPage('play', function (dom, args, pageData) {
     if (pageData.load) {
@@ -74,11 +74,25 @@ poncon.setPage('play', function (dom, args, pageData) {
     var videoId = args[0];
     var videoEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('video');
     videoEle.src = '';
-    request('/video/view/info', {
+    var postData = {
         uid: config.user_info.user_id,
         session: config.user_info.session,
         video_id: videoId
-    }, function (data) {
+    };
+    var dataCacheName = JSON.stringify({
+        path: '/video/view/info',
+        postData: postData
+    });
+    if (dataCache[dataCacheName]) {
+        runData(dataCache[dataCacheName]);
+    }
+    else {
+        request('/video/view/info', postData, function (data) {
+            dataCache[dataCacheName] = data;
+            runData(data);
+        });
+    }
+    function runData(data) {
         pageData.load = true;
         var videoUrl = data.data.video.href;
         var videoTitle = data.data.video.name;
@@ -94,7 +108,7 @@ poncon.setPage('play', function (dom, args, pageData) {
         if (config.canPlay) {
             videoEle === null || videoEle === void 0 ? void 0 : videoEle.play();
         }
-    });
+    }
 });
 poncon.start();
 /**
@@ -108,7 +122,7 @@ function loadVideoList(type_id, page, pageSize) {
     if (pageSize === void 0) { pageSize = 24; }
     var listEle = document.querySelector('.poncon-home .video-list');
     listEle.innerHTML = '';
-    request('/video/view/list', {
+    var postData = {
         uid: config.user_info.user_id,
         session: config.user_info.session,
         is_review: 0,
@@ -117,14 +131,32 @@ function loadVideoList(type_id, page, pageSize) {
         label_id: type_id,
         page: page + 1,
         page_size: pageSize
-    }, function (data) {
+    };
+    /** 数据缓存键 */
+    var dataCacheName = JSON.stringify({
+        path: '/video/view/list',
+        postData: postData
+    });
+    if (dataCache[dataCacheName]) {
+        // 使用缓存数据
+        runData(dataCache[dataCacheName]);
+    }
+    else {
+        // 重新请求数据
+        request('/video/view/list', postData, function (data) {
+            runData(data);
+        });
+    }
+    /** 数据获取成功后操作 */
+    function runData(data) {
+        dataCache[dataCacheName] = data; // 缓存数据
         var list = data.data.list;
         var html = (function (list) {
             var html = '';
             list.forEach(function (item) {
                 if (!item.href)
                     return;
-                html += "\n                <div class=\"col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow h-100\" href=\"#/play/".concat(item.id, "\">\n                        <div class=\"ratio ratio-16x9\">\n                            <img src=\"").concat(changeToHttp(item.href_image), "\" alt=\"").concat(item.name, "\" class=\"card-img-top\">\n                        </div>\n                        <div class=\"card-body d-flex flex-column\">\n                            <div class=\"h5 card-title multi-line videoTitle\">").concat(item.name, "</div>\n                            <div class=\"card-text small text-muted d-flex mb-2 mt-auto\">\n                                <span class=\"me-auto\"><span class=\"text-success\">").concat(parseDuration(item.duration), "</span></span>\n                                <span>").concat(item.performer, "</span>\n                            </div>\n                            <div class=\"publish-time small text-muted\">").concat(item.update_time, "</div>\n                        </div>\n                    </a>\n                </div>");
+                html += "\n                <div class=\"col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow h-100\" href=\"#/play/".concat(item.id, "\">\n                        <div class=\"ratio ratio-16x9\">\n                            <img src=\"").concat(changeToHttp(item.href_image), "\" alt=\"").concat(item.name, "\" class=\"card-img-top\">\n                        </div>\n                        <div class=\"card-body d-flex flex-column ls-1\">\n                            <div class=\"h5 card-title multi-line videoTitle\">").concat(item.name, "</div>\n                            <div class=\"card-text small text-muted d-flex mb-2 mt-auto\">\n                                <span class=\"me-auto\"><span class=\"text-success\">").concat(parseDuration(item.duration), "</span></span>\n                                <span>").concat(item.performer, "</span>\n                            </div>\n                            <div class=\"publish-time small text-muted\">").concat(item.update_time, "</div>\n                        </div>\n                    </a>\n                </div>");
             });
             return html;
         })(list);
@@ -134,7 +166,7 @@ function loadVideoList(type_id, page, pageSize) {
                 poncon.pages.play.data.load = false;
             });
         });
-    });
+    }
 }
 /**
  * 发送 POST 请求
@@ -172,14 +204,15 @@ function changeActiveMenu() {
     var activeEle = document.querySelector(".sidebar .menu .item-".concat(target));
     activeEle === null || activeEle === void 0 ? void 0 : activeEle.classList.add('active');
 }
+/** 将秒数转换为文本 */
 function parseDuration(duration) {
     var hour = Math.floor(duration / 3600);
     var min = Math.floor((duration - hour * 3600) / 60);
     var sec = duration - hour * 3600 - min * 60;
     var str = '';
-    str += hour > 0 ? "".concat(hour, " \u65F6 ") : '';
-    str += min > 0 ? "".concat(min, " \u5206 ") : '';
-    str += sec > 0 ? "".concat(sec, " \u79D2") : '';
+    str += hour > 0 ? "".concat(hour, "\u65F6") : '';
+    str += min > 0 ? "".concat(min, "\u5206") : '';
+    str += sec > 0 ? "".concat(sec, "\u79D2") : '';
     return str;
 }
 /** 将 URL 的协议改成 HTTP */

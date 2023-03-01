@@ -17,6 +17,10 @@ const config: {
     siteName: 'AVIN 视频',
     canPlay: false
 }
+/** 缓存数据 */
+const dataCache: {
+    [key: string]: any
+} = {}
 
 const poncon = new Poncon()
 poncon.setPageList(['home', 'video', 'about', 'female', 'type', 'play'])
@@ -77,9 +81,7 @@ poncon.setPage('home', (dom, args, pageData) => {
     now_ele?.classList?.add('btn-secondary')
     document.title = now_ele?.innerText + ' - ' + config.siteName
     pageData.load = true
-    if (!pageData.request) {
-        loadVideoList(now_type_id, 0, 24)
-    }
+    loadVideoList(now_type_id, 0, 24)
 })
 poncon.setPage('play', (dom, args, pageData) => {
     if (pageData.load) {
@@ -89,11 +91,24 @@ poncon.setPage('play', (dom, args, pageData) => {
     const videoId = (args as string[])[0]
     const videoEle = dom?.querySelector('video') as HTMLVideoElement
     videoEle.src = ''
-    request('/video/view/info', {
+    const postData = {
         uid: config.user_info.user_id,
         session: config.user_info.session,
         video_id: videoId
-    }, (data) => {
+    }
+    const dataCacheName = JSON.stringify({
+        path: '/video/view/info',
+        postData: postData
+    })
+    if (dataCache[dataCacheName]) {
+        runData(dataCache[dataCacheName])
+    } else {
+        request('/video/view/info', postData, (data) => {
+            dataCache[dataCacheName] = data
+            runData(data)
+        })
+    }
+    function runData(data: any) {
         pageData.load = true
         const videoUrl: string = data.data.video.href
         const videoTitle: string = data.data.video.name
@@ -108,7 +123,7 @@ poncon.setPage('play', (dom, args, pageData) => {
         if (config.canPlay) {
             videoEle?.play()
         }
-    })
+    }
 })
 poncon.start()
 
@@ -122,7 +137,7 @@ poncon.start()
 function loadVideoList(type_id: string, page: number = 0, pageSize: number = 24) {
     const listEle = document.querySelector('.poncon-home .video-list') as HTMLElement
     listEle.innerHTML = ''
-    request('/video/view/list', {
+    const postData = {
         uid: config.user_info.user_id,
         session: config.user_info.session,
         is_review: 0,
@@ -131,7 +146,24 @@ function loadVideoList(type_id: string, page: number = 0, pageSize: number = 24)
         label_id: type_id,
         page: page + 1,
         page_size: pageSize,
-    }, (data) => {
+    }
+    /** 数据缓存键 */
+    const dataCacheName = JSON.stringify({
+        path: '/video/view/list',
+        postData: postData
+    })
+    if (dataCache[dataCacheName]) {
+        // 使用缓存数据
+        runData(dataCache[dataCacheName])
+    } else {
+        // 重新请求数据
+        request('/video/view/list', postData, (data) => {
+            runData(data)
+        })
+    }
+    /** 数据获取成功后操作 */
+    function runData(data: any) {
+        dataCache[dataCacheName] = data // 缓存数据
         const list = data.data.list as any[]
         const html = ((list) => {
             let html = ''
@@ -158,7 +190,7 @@ function loadVideoList(type_id: string, page: number = 0, pageSize: number = 24)
                         <div class="ratio ratio-16x9">
                             <img src="${changeToHttp(item.href_image)}" alt="${item.name}" class="card-img-top">
                         </div>
-                        <div class="card-body d-flex flex-column">
+                        <div class="card-body d-flex flex-column ls-1">
                             <div class="h5 card-title multi-line videoTitle">${item.name}</div>
                             <div class="card-text small text-muted d-flex mb-2 mt-auto">
                                 <span class="me-auto"><span class="text-success">${parseDuration(item.duration)}</span></span>
@@ -177,7 +209,7 @@ function loadVideoList(type_id: string, page: number = 0, pageSize: number = 24)
                 poncon.pages.play.data.load = false
             })
         })
-    })
+    }
 }
 
 /**
@@ -225,15 +257,15 @@ function changeActiveMenu() {
     activeEle?.classList.add('active')
 }
 
-
+/** 将秒数转换为文本 */
 function parseDuration(duration: number) {
     const hour = Math.floor(duration / 3600)
     const min = Math.floor((duration - hour * 3600) / 60)
     const sec = duration - hour * 3600 - min * 60
     let str = ''
-    str += hour > 0 ? `${hour} 时 ` : ''
-    str += min > 0 ? `${min} 分 ` : ''
-    str += sec > 0 ? `${sec} 秒` : ''
+    str += hour > 0 ? `${hour}时` : ''
+    str += min > 0 ? `${min}分` : ''
+    str += sec > 0 ? `${sec}秒` : ''
     return str
 }
 
