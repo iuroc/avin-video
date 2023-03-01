@@ -95,8 +95,8 @@ poncon.setPage('play', (dom, args, pageData) => {
         video_id: videoId
     }, (data) => {
         pageData.load = true
-        const videoUrl = data.data.video.href
-        const videoTitle = data.data.video.name
+        const videoUrl: string = data.data.video.href
+        const videoTitle: string = data.data.video.name
         const videoTitleEle = dom?.querySelector('.videoTitle') as HTMLDivElement
         videoTitleEle.innerHTML = videoTitle
         if (Hls.isSupported()) {
