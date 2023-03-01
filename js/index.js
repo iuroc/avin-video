@@ -138,19 +138,21 @@ poncon.setPage('type', function (dom, args, pageData) {
     function runData(data) {
         var typeList = data.data;
         var typeListEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
-        typeListEle.innerHTML = (function (typeList) {
-            var html = '';
-            typeList.forEach(function (type) {
-                html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.id, "\" href=\"#/type/").concat(type.id, "\">").concat(type.name, "</a>");
+        if (!dataCache[dataCacheName]) {
+            typeListEle.innerHTML = (function (typeList) {
+                var html = '';
+                typeList.forEach(function (type) {
+                    html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.id, "\" href=\"#/type/").concat(type.id, "\">").concat(type.name, "</a>");
+                });
+                return html;
+            })(typeList);
+            typeListEle.addEventListener('wheel', function (event) {
+                event.preventDefault();
+                animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
             });
-            return html;
-        })(typeList);
-        function wheelEvent(event) {
-            event.preventDefault();
-            animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
+            var typeId = args && args[0];
+            console.log('准备加载子类列表，父类 ID: ' + typeId);
         }
-        typeListEle.removeEventListener('wheel', wheelEvent);
-        typeListEle.addEventListener('wheel', wheelEvent);
     }
 });
 poncon.start();
