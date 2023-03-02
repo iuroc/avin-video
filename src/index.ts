@@ -393,12 +393,22 @@ function request(
 /** 修改导航栏激活状态 */
 function changeActiveMenu() {
     const target = location.hash.split('/')[1] || 'home'
+    /** 侧边导航选项 */
     const eles = document.querySelectorAll<HTMLElement>('.sidebar .menu .item')
     eles.forEach(ele => {
         ele.classList.remove('active')
     })
+    /** 底部导航选项 */
+    const elesBottom = document.querySelectorAll<HTMLElement>('.bottom-menu .item')
+    elesBottom.forEach(ele => {
+        ele.classList.remove('active')
+    })
+    /** 侧边导航选项 */
     const activeEle = document.querySelector(`.sidebar .menu .item-${target}`)
+    /** 底部导航选项 */
+    const activeBottomEle = document.querySelector(`.bottom-menu .item-${target}`)
     activeEle?.classList.add('active')
+    activeBottomEle?.classList.add('active')
 }
 
 /** 将秒数转换为文本 */

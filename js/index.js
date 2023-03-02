@@ -335,12 +335,22 @@ function request(path, data, success, async) {
 /** 修改导航栏激活状态 */
 function changeActiveMenu() {
     var target = location.hash.split('/')[1] || 'home';
+    /** 侧边导航选项 */
     var eles = document.querySelectorAll('.sidebar .menu .item');
     eles.forEach(function (ele) {
         ele.classList.remove('active');
     });
+    /** 底部导航选项 */
+    var elesBottom = document.querySelectorAll('.bottom-menu .item');
+    elesBottom.forEach(function (ele) {
+        ele.classList.remove('active');
+    });
+    /** 侧边导航选项 */
     var activeEle = document.querySelector(".sidebar .menu .item-".concat(target));
+    /** 底部导航选项 */
+    var activeBottomEle = document.querySelector(".bottom-menu .item-".concat(target));
     activeEle === null || activeEle === void 0 ? void 0 : activeEle.classList.add('active');
+    activeBottomEle === null || activeBottomEle === void 0 ? void 0 : activeBottomEle.classList.add('active');
 }
 /** 将秒数转换为文本 */
 function parseDuration(duration) {

@@ -53,6 +53,7 @@ a {
     box-shadow: 0 0 10px var(--bs-gray-400);
 }
 
+
 .sidebar .menu .item {
     cursor: pointer;
     transition: .2s background-color;
@@ -62,18 +63,35 @@ a {
     color: var(--bs-dark);
 }
 
-.sidebar .menu .item:hover {
+.sidebar .menu .item:hover,
+.bottom-menu .item:hover {
     background-color: var(--bs-gray-200);
 }
 
-.sidebar .menu .item.active {
+.sidebar .menu .item.active,
+.bottom-menu .item.active {
     background-color: var(--bs-gray-300);
 }
 
-.sidebar .menu .item:active {
+.sidebar .menu .item:active,
+.bottom-menu .item:active {
     background-color: var(--bs-gray-400);
 }
 
+.bottom-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10000;
+    display: flex;
+}
+
+.bottom-menu .item {
+    flex: 1;
+    font-size: 20px;
+    color: black;
+}
 
 .body {
     flex: 1;
