@@ -115,3 +115,9 @@ a {
 .poncon-type .type-list::-webkit-scrollbar {
     height: 0;
 }
+
+@media screen and (max-width: 768px) {
+    .page-change-tool {
+        padding-bottom: 80px !important;
+    }
+}
