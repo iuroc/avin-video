@@ -24,12 +24,13 @@ poncon.pages.home.data.types = [
     { typeId: '1891', name: '经典三级' },
 ];
 changeActiveMenu();
-window.addEventListener('hashchange', function (event) {
+window.onhashchange = function (event) {
     changeActiveMenu();
-});
-window.addEventListener('click', function () {
+    bodyToTop();
+};
+window.onclick = function () {
     config.canPlay = true;
-});
+};
 request('/login/api/login', {
     channel_id: 3000,
     device_id: 'apee'
@@ -53,10 +54,10 @@ poncon.setPage('home', function (dom, args, pageData) {
         ele.classList.remove('btn-secondary');
         ele.classList.add('btn-outline-secondary');
     });
-    eleTypeList.addEventListener('wheel', function (event) {
+    eleTypeList.onwheel = function (event) {
         event.preventDefault();
-        animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
-    });
+        animateScrollLeft(eleTypeList, eleTypeList.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
+    };
     var nowTypeId = args[0] || '';
     var page = parseInt(args[1]) || 0;
     var argsTypeName = args[2] || '';
@@ -271,9 +272,9 @@ function loadVideoList(typeId, page, pageSize, keyword) {
         })(list);
         listEle.innerHTML = html;
         listEle.querySelectorAll('.list-item').forEach(function (ele) {
-            ele.addEventListener('click', function () {
+            ele.onclick = function () {
                 poncon.pages.play.data.load = false;
-            });
+            };
         });
         var listLength = listEle.querySelectorAll('.list-item').length;
         /** 是否允许加载下一页 */
@@ -389,4 +390,14 @@ function animateScrollLeft(element, to, duration) {
         return -c / 2 * (t * (t - 2) - 1) + b;
     }
     animate();
+}
+/**
+ * `.body` 元素回到顶部
+ */
+function bodyToTop() {
+    var _a;
+    (_a = document.querySelector('.body')) === null || _a === void 0 ? void 0 : _a.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 }

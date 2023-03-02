@@ -23,9 +23,11 @@ a {
 .hover-shadow {
     transition: .3s box-shadow;
     cursor: pointer;
+    outline: none;
 }
 
-.hover-shadow:hover {
+.hover-shadow:hover,
+.hover-shadow:focus-visible {
     box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
 }
 
@@ -33,7 +35,8 @@ a {
     transition: transform .5s;
 }
 
-.hover-shadow:hover img {
+.hover-shadow:hover img,
+.hover-shadow:focus-visible img {
     transform: scale(1.5, 1.5);
 }
 
@@ -120,4 +123,8 @@ a {
     .page-change-tool {
         padding-bottom: 80px !important;
     }
+}
+
+.video-box video {
+    outline: none;
 }

@@ -36,13 +36,14 @@ poncon.pages.home.data.types = [
 ]
 
 changeActiveMenu()
-window.addEventListener('hashchange', (event) => {
+window.onhashchange = (event) => {
     changeActiveMenu()
-})
+    bodyToTop()
+}
 
-window.addEventListener('click', () => {
+window.onclick = () => {
     config.canPlay = true
-})
+}
 
 request('/login/api/login', {
     channel_id: 3000,
@@ -68,10 +69,10 @@ poncon.setPage('home', (dom, args, pageData) => {
         ele.classList.remove('btn-secondary')
         ele.classList.add('btn-outline-secondary')
     })
-    eleTypeList.addEventListener('wheel', function (event) {
+    eleTypeList.onwheel = function (event) {
         event.preventDefault()
-        animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600)
-    })
+        animateScrollLeft(eleTypeList, eleTypeList.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600)
+    }
     const nowTypeId = (args as string[])[0] || ''
     const page = parseInt((args as string[])[1]) || 0
     const argsTypeName = (args as string[])[2] || ''
@@ -322,9 +323,9 @@ function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24, 
         })(list)
         listEle.innerHTML = html
         listEle.querySelectorAll<HTMLElement>('.list-item').forEach(ele => {
-            ele.addEventListener('click', () => {
+            ele.onclick = () => {
                 poncon.pages.play.data.load = false
-            })
+            }
         })
         const listLength = listEle.querySelectorAll<HTMLElement>('.list-item').length
         /** 是否允许加载下一页 */
@@ -452,4 +453,14 @@ function animateScrollLeft(element: HTMLElement, to: number, duration: number) {
         return -c / 2 * (t * (t - 2) - 1) + b
     }
     animate()
+}
+
+/**
+ * `.body` 元素回到顶部
+ */
+function bodyToTop() {
+    document.querySelector('.body')?.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    })
 }
