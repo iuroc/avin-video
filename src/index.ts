@@ -85,6 +85,7 @@ poncon.setPage('home', (dom, args, pageData) => {
     nowEle?.classList?.add('btn-secondary')
     document.title = nowEle?.innerText + ' - ' + config.siteName
     pageData.load = true
+    const listEle = document.querySelector('.poncon-home .video-list') as HTMLElement
     loadVideoList(nowTypeId, 0, 24)
 })
 poncon.setPage('play', (dom, args, pageData) => {
@@ -168,16 +169,46 @@ poncon.setPage('type', (dom, args, pageData) => {
                 event.preventDefault()
                 animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600)
             })
-            const typeId = args && args[0]
-            console.log('准备加载子类列表，父类 ID: ' + typeId)
-
         }
+        /** 当前父类 ID */
+        const typeId = (args && args[0]) || typeList[0].id
+        /** 选项卡按钮列表 */
+        const typeEles = typeListEle.querySelectorAll<HTMLElement>('[data-type-id]')
+        typeEles.forEach(ele => {
+            ele.classList.remove('btn-secondary')
+            ele.classList.add('btn-outline-secondary')
+        })
+        /** 当前选项卡按钮 */
+        const nowTypeEle = typeListEle.querySelector(`[data-type-id="${typeId}"]`)
+        if (!nowTypeEle) return
+        nowTypeEle?.classList?.remove('btn-outline-secondary')
+        nowTypeEle?.classList?.add('btn-secondary')
+        loadSubTypeList(typeId, 0, 24)
         pageData.load = true
     }
 })
-declare function getEventListeners(ele: HTMLElement): any
 poncon.start()
 
+/**
+ * 加载子类列表
+ * @param typeId 父类 ID
+ */
+function loadSubTypeList(typeId: number, page: number = 0, pageSize: number = 24) {
+    request('/video/label/type_list', {
+        uid: config.userInfo.user_id,
+        session: config.userInfo.session,
+        is_review: 0,
+        type_group_id: typeId,
+        page: page + 1,
+        page_size: pageSize,
+    }, (data) => {
+        const list = data.data
+        const html = ((list) => {
+            let html = ''
+            html += ``
+        })(list)
+    })
+}
 
 /**
  * 加载视频列表
@@ -185,7 +216,7 @@ poncon.start()
  * @param page 页码 初始值为 0
  * @param pageSize 每页加载数量
  */
-function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24) {
+function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24, keyword: string = '') {
     const listEle = document.querySelector('.poncon-home .video-list') as HTMLElement
     listEle.innerHTML = ''
     const postData = {
@@ -194,6 +225,7 @@ function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24) 
         is_review: 0,
         is_new: 1,
         v: 0,
+        search: keyword,
         label_id: typeId,
         page: page + 1,
         page_size: pageSize,

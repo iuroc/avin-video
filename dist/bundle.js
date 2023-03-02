@@ -316,6 +316,7 @@ poncon.setPage('type', function (dom, args, pageData) {
         });
     }
     function runData(data) {
+        var _a, _b;
         var typeList = data.data;
         var typeListEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
         if (!pageData.load) {
@@ -330,9 +331,18 @@ poncon.setPage('type', function (dom, args, pageData) {
                 event.preventDefault();
                 animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
             });
-            var typeId = args && args[0];
-            console.log('准备加载子类列表，父类 ID: ' + typeId);
         }
+        var typeId = (args && args[0]) || typeList[0].id;
+        var typeEles = typeListEle.querySelectorAll('[data-type-id]');
+        typeEles.forEach(function (ele) {
+            ele.classList.remove('btn-secondary');
+            ele.classList.add('btn-outline-secondary');
+        });
+        var nowTypeEle = typeListEle.querySelector("[data-type-id=\"".concat(typeId, "\"]"));
+        if (!nowTypeEle)
+            return;
+        (_a = nowTypeEle === null || nowTypeEle === void 0 ? void 0 : nowTypeEle.classList) === null || _a === void 0 ? void 0 : _a.remove('btn-outline-secondary');
+        (_b = nowTypeEle === null || nowTypeEle === void 0 ? void 0 : nowTypeEle.classList) === null || _b === void 0 ? void 0 : _b.add('btn-secondary');
         pageData.load = true;
     }
 });
