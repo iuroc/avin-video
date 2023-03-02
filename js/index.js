@@ -58,7 +58,8 @@ poncon.setPage('home', function (dom, args, pageData) {
         animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
     });
     var nowTypeId = args[0] || '';
-    var argsTypeName = args[1] || '';
+    var page = parseInt(args[1]) || 0;
+    var argsTypeName = args[2] || '';
     var nowEle = eleTypeList === null || eleTypeList === void 0 ? void 0 : eleTypeList.querySelector("[data-type-id=\"".concat(nowTypeId, "\"]"));
     /** 开头的分类选项卡，用于放置非主页原有分类标签 */
     var headTypeEle = eleTypeList.querySelector('.head-type');
@@ -73,7 +74,7 @@ poncon.setPage('home', function (dom, args, pageData) {
     (_a = nowEle === null || nowEle === void 0 ? void 0 : nowEle.classList) === null || _a === void 0 ? void 0 : _a.remove('btn-outline-secondary');
     (_b = nowEle === null || nowEle === void 0 ? void 0 : nowEle.classList) === null || _b === void 0 ? void 0 : _b.add('btn-secondary');
     pageData.load = true;
-    loadVideoList(nowTypeId, 0, 24);
+    loadVideoList(nowTypeId, page, 24);
 });
 poncon.setPage('play', function (dom, args, pageData) {
     if (pageData.load) {
@@ -142,25 +143,67 @@ function loadSubTypeList(page, pageSize) {
         path: '/video/label/type_list',
         postData: postData
     });
+    var listEle = document.querySelector('.poncon-type .sub-type-list');
+    listEle.innerHTML = '';
     if (dataCache[dataCacheName]) {
         runData(dataCache[dataCacheName]);
     }
     else {
+        loading(false);
         request('/video/label/type_list', postData, function (data) {
             dataCache[dataCacheName] = data;
             runData(data);
+            loading(true);
         });
     }
     function runData(data) {
         var listEle = document.querySelector('.poncon-type .sub-type-list');
         var dataList = data.data;
+        /** 是否允许加载下一页 */
+        var loadNext = (dataList && dataList.length == pageSize);
+        /** 是否允许加载上一页 */
+        var loadLast = page > 0;
+        changePageLink(loadLast, loadNext);
         listEle.innerHTML = (function (dataList) {
             var html = '';
             dataList.forEach(function (item) {
-                html += "\n                <div class=\"col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow card-body text-center ls-1\" data-type-id=\"".concat(item.id, "\" href=\"#/home/").concat(item.id, "/").concat(item.name, "\">\n                        <div class=\"h5 single-line\">").concat(item.name, "</div>\n                        <div class=\"text-primary\">\u5171 ").concat(item.video_num, " \u4E2A\u89C6\u9891</div>\n                    </a>\n                </div>");
+                html += "\n                <div class=\"col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow card-body text-center ls-1\" data-type-id=\"".concat(item.id, "\" href=\"#/home/").concat(item.id, "/0/").concat(item.name, "\">\n                        <div class=\"h5 single-line\">").concat(item.name, "</div>\n                        <div class=\"text-primary\">\u5171 ").concat(item.video_num, " \u4E2A\u89C6\u9891</div>\n                    </a>\n                </div>");
             });
             return html;
         })(dataList);
+    }
+    /**
+     * 加载中
+     * @param ifEnd 是否加载完成
+     */
+    function loading(ifEnd) {
+        var pageChangeToolEle = document.querySelector('.poncon-type .page-change-tool');
+        pageChangeToolEle.style.display = ifEnd ? 'block' : 'none';
+        var loadingEle = document.querySelector('.poncon-type .spinner-grow');
+        loadingEle.style.display = ifEnd ? 'none' : 'block';
+    }
+    /**
+     * 更新翻页按钮
+     * @param loadLast 是否允许上一页
+     * @param loadNext 是否允许下一页
+     */
+    function changePageLink(loadLast, loadNext) {
+        var lastPage = page == 0 ? 0 : page - 1;
+        var nextPage = page + 1;
+        var lastPageEle = document.querySelector('.poncon-type .last-page');
+        var nextPageEle = document.querySelector('.poncon-type .next-page');
+        if (loadLast) {
+            lastPageEle.href = "#/type/".concat(lastPage);
+            lastPageEle.classList.remove('disabled');
+        }
+        else
+            lastPageEle.classList.add('disabled');
+        if (loadNext) {
+            nextPageEle.href = "#/type/".concat(nextPage);
+            nextPageEle.classList.remove('disabled');
+        }
+        else
+            nextPageEle.classList.add('disabled');
     }
 }
 /**
@@ -197,9 +240,21 @@ function loadVideoList(typeId, page, pageSize, keyword) {
     }
     else {
         // 重新请求数据
+        loading(false);
         request('/video/view/list', postData, function (data) {
             runData(data);
+            loading(true);
         });
+    }
+    /**
+     * 加载中
+     * @param ifEnd 加载是否完成
+     */
+    function loading(ifEnd) {
+        var changPageToolEle = document.querySelector('.poncon-home .page-change-tool');
+        changPageToolEle.style.display = ifEnd ? 'block' : 'none';
+        var loadingEle = document.querySelector('.poncon-home .spinner-grow');
+        loadingEle.style.display = ifEnd ? 'none' : 'block';
     }
     /** 数据获取成功后操作 */
     function runData(data) {
@@ -210,16 +265,45 @@ function loadVideoList(typeId, page, pageSize, keyword) {
             list.forEach(function (item) {
                 if (!item.href)
                     return;
-                html += "\n                <div class=\"col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow h-100\" href=\"#/play/".concat(item.id, "\">\n                        <div class=\"ratio ratio-16x9\">\n                            <div class=\"img-box overflow-hidden\">\n                                <img src=\"").concat(changeToHttp(item.href_image), "\" alt=\"").concat(item.name, "\" class=\"card-img-top\">\n                            </div>\n                        </div>\n                        <div class=\"card-body d-flex flex-column ls-1\">\n                            <div class=\"h5 card-title multi-line videoTitle\">").concat(item.name, "</div>\n                            <div class=\"card-text small text-muted d-flex mb-2 mt-auto\">\n                                <span class=\"me-auto\"><span class=\"text-success\">").concat(parseDuration(item.duration), "</span></span>\n                                <span>").concat(item.performer, "</span>\n                            </div>\n                            <div class=\"publish-time small text-muted\">").concat(item.update_time, "</div>\n                        </div>\n                    </a>\n                </div>");
+                html += "\n                <div class=\"col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow h-100 list-item overflow-hidden\" href=\"#/play/".concat(item.id, "\">\n                        <div class=\"ratio ratio-16x9\">\n                            <div class=\"img-box overflow-hidden\">\n                                <img src=\"").concat(changeToHttp(item.href_image), "\" alt=\"").concat(item.name, "\" class=\"card-img-top\">\n                            </div>\n                        </div>\n                        <div class=\"card-body d-flex flex-column ls-1\">\n                            <div class=\"h5 card-title multi-line videoTitle\">").concat(item.name, "</div>\n                            <div class=\"card-text small text-muted d-flex mb-2 mt-auto\">\n                                <span class=\"me-auto\"><span class=\"text-success\">").concat(parseDuration(item.duration), "</span></span>\n                                <span>").concat(item.performer, "</span>\n                            </div>\n                            <div class=\"publish-time small text-muted\">").concat(item.update_time, "</div>\n                        </div>\n                    </a>\n                </div>");
             });
             return html;
         })(list);
         listEle.innerHTML = html;
-        listEle.querySelectorAll('.card').forEach(function (ele) {
+        listEle.querySelectorAll('.list-item').forEach(function (ele) {
             ele.addEventListener('click', function () {
                 poncon.pages.play.data.load = false;
             });
         });
+        var listLength = listEle.querySelectorAll('.list-item').length;
+        /** 是否允许加载下一页 */
+        var loadNext = (list && listLength == pageSize);
+        /** 是否允许加载上一页 */
+        var loadLast = page > 0;
+        changePageLink(loadLast, loadNext);
+    }
+    /**
+     * 更新翻页按钮
+     * @param loadLast 是否允许上一页
+     * @param loadNext 是否允许下一页
+     */
+    function changePageLink(loadLast, loadNext) {
+        var lastPage = page == 0 ? 0 : page - 1;
+        var nextPage = page + 1;
+        var lastPageEle = document.querySelector('.poncon-home .last-page');
+        var nextPageEle = document.querySelector('.poncon-home .next-page');
+        if (loadLast) {
+            lastPageEle.href = "#/home/".concat(typeId, "/").concat(lastPage);
+            lastPageEle.classList.remove('disabled');
+        }
+        else
+            lastPageEle.classList.add('disabled');
+        if (loadNext) {
+            nextPageEle.href = "#/home/".concat(typeId, "/").concat(nextPage);
+            nextPageEle.classList.remove('disabled');
+        }
+        else
+            nextPageEle.classList.add('disabled');
     }
 }
 /**

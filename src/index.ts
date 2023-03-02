@@ -51,9 +51,6 @@ request('/login/api/login', {
     config.userInfo = data.data
 }, false)
 
-
-
-
 poncon.setPage('home', (dom, args, pageData) => {
     const eleTypeList = dom?.querySelector('.type-list') as HTMLElement
     if (!pageData.load) {
@@ -76,7 +73,8 @@ poncon.setPage('home', (dom, args, pageData) => {
         animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600)
     })
     const nowTypeId = (args as string[])[0] || ''
-    const argsTypeName = (args as string[])[1] || ''
+    const page = parseInt((args as string[])[1]) || 0
+    const argsTypeName = (args as string[])[2] || ''
     const nowEle = eleTypeList?.querySelector(`[data-type-id="${nowTypeId}"]`) as HTMLDivElement
     /** 开头的分类选项卡，用于放置非主页原有分类标签 */
     const headTypeEle = eleTypeList.querySelector('.head-type')
@@ -89,7 +87,7 @@ poncon.setPage('home', (dom, args, pageData) => {
     nowEle?.classList?.remove('btn-outline-secondary')
     nowEle?.classList?.add('btn-secondary')
     pageData.load = true
-    loadVideoList(nowTypeId, 0, 24)
+    loadVideoList(nowTypeId, page, 24)
 })
 poncon.setPage('play', (dom, args, pageData) => {
     if (pageData.load) {
@@ -157,18 +155,27 @@ function loadSubTypeList(page: number = 0, pageSize: number = 24) {
         path: '/video/label/type_list',
         postData: postData
     })
+    const listEle = document.querySelector('.poncon-type .sub-type-list') as HTMLElement
+    listEle.innerHTML = ''
     if (dataCache[dataCacheName]) {
         runData(dataCache[dataCacheName])
     } else {
+        loading(false)
         request('/video/label/type_list', postData, (data) => {
             dataCache[dataCacheName] = data
             runData(data)
+            loading(true)
         })
     }
 
     function runData(data: any) {
         const listEle = document.querySelector('.poncon-type .sub-type-list') as HTMLElement
         const dataList = data.data
+        /** 是否允许加载下一页 */
+        const loadNext = (dataList && dataList.length == pageSize)
+        /** 是否允许加载上一页 */
+        const loadLast = page > 0
+        changePageLink(loadLast, loadNext)
         listEle.innerHTML = ((dataList) => {
             let html = ''
             dataList.forEach((item: {
@@ -181,7 +188,7 @@ function loadSubTypeList(page: number = 0, pageSize: number = 24) {
             }) => {
                 html += `
                 <div class="col-xl-3 col-lg-4 col-sm-6 mb-4">
-                    <a class="card hover-shadow card-body text-center ls-1" data-type-id="${item.id}" href="#/home/${item.id}/${item.name}">
+                    <a class="card hover-shadow card-body text-center ls-1" data-type-id="${item.id}" href="#/home/${item.id}/0/${item.name}">
                         <div class="h5 single-line">${item.name}</div>
                         <div class="text-primary">共 ${item.video_num} 个视频</div>
                     </a>
@@ -189,6 +196,38 @@ function loadSubTypeList(page: number = 0, pageSize: number = 24) {
             })
             return html
         })(dataList)
+    }
+
+    /**
+     * 加载中
+     * @param ifEnd 是否加载完成
+     */
+    function loading(ifEnd: boolean) {
+        const pageChangeToolEle = document.querySelector('.poncon-type .page-change-tool') as HTMLElement
+        pageChangeToolEle.style.display = ifEnd ? 'block' : 'none'
+        const loadingEle = document.querySelector('.poncon-type .spinner-grow') as HTMLElement
+        loadingEle.style.display = ifEnd ? 'none' : 'block'
+    }
+
+    /**
+     * 更新翻页按钮
+     * @param loadLast 是否允许上一页
+     * @param loadNext 是否允许下一页
+     */
+    function changePageLink(loadLast: boolean, loadNext: boolean) {
+        const lastPage = page == 0 ? 0 : page - 1
+        const nextPage = page + 1
+        const lastPageEle = document.querySelector('.poncon-type .last-page') as HTMLLinkElement
+        const nextPageEle = document.querySelector('.poncon-type .next-page') as HTMLLinkElement
+        if (loadLast) {
+            lastPageEle.href = `#/type/${lastPage}`
+            lastPageEle.classList.remove('disabled')
+        }
+        else lastPageEle.classList.add('disabled')
+        if (loadNext) {
+            nextPageEle.href = `#/type/${nextPage}`
+            nextPageEle.classList.remove('disabled')
+        } else nextPageEle.classList.add('disabled')
     }
 }
 /**
@@ -221,9 +260,21 @@ function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24, 
         runData(dataCache[dataCacheName])
     } else {
         // 重新请求数据
+        loading(false)
         request('/video/view/list', postData, (data) => {
             runData(data)
+            loading(true)
         })
+    }
+    /**
+     * 加载中
+     * @param ifEnd 加载是否完成
+     */
+    function loading(ifEnd: boolean) {
+        const changPageToolEle = document.querySelector('.poncon-home .page-change-tool') as HTMLElement
+        changPageToolEle.style.display = ifEnd ? 'block' : 'none'
+        const loadingEle = document.querySelector('.poncon-home .spinner-grow') as HTMLElement
+        loadingEle.style.display = ifEnd ? 'none' : 'block'
     }
     /** 数据获取成功后操作 */
     function runData(data: any) {
@@ -250,7 +301,7 @@ function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24, 
                 if (!item.href) return
                 html += `
                 <div class="col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4">
-                    <a class="card hover-shadow h-100" href="#/play/${item.id}">
+                    <a class="card hover-shadow h-100 list-item overflow-hidden" href="#/play/${item.id}">
                         <div class="ratio ratio-16x9">
                             <div class="img-box overflow-hidden">
                                 <img src="${changeToHttp(item.href_image)}" alt="${item.name}" class="card-img-top">
@@ -270,11 +321,38 @@ function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24, 
             return html
         })(list)
         listEle.innerHTML = html
-        listEle.querySelectorAll<HTMLElement>('.card').forEach(ele => {
+        listEle.querySelectorAll<HTMLElement>('.list-item').forEach(ele => {
             ele.addEventListener('click', () => {
                 poncon.pages.play.data.load = false
             })
         })
+        const listLength = listEle.querySelectorAll<HTMLElement>('.list-item').length
+        /** 是否允许加载下一页 */
+        const loadNext = (list && listLength == pageSize)
+        /** 是否允许加载上一页 */
+        const loadLast = page > 0
+        changePageLink(loadLast, loadNext)
+    }
+
+    /**
+     * 更新翻页按钮
+     * @param loadLast 是否允许上一页
+     * @param loadNext 是否允许下一页
+     */
+    function changePageLink(loadLast: boolean, loadNext: boolean) {
+        const lastPage = page == 0 ? 0 : page - 1
+        const nextPage = page + 1
+        const lastPageEle = document.querySelector('.poncon-home .last-page') as HTMLLinkElement
+        const nextPageEle = document.querySelector('.poncon-home .next-page') as HTMLLinkElement
+        if (loadLast) {
+            lastPageEle.href = `#/home/${typeId}/${lastPage}`
+            lastPageEle.classList.remove('disabled')
+        }
+        else lastPageEle.classList.add('disabled')
+        if (loadNext) {
+            nextPageEle.href = `#/home/${typeId}/${nextPage}`
+            nextPageEle.classList.remove('disabled')
+        } else nextPageEle.classList.add('disabled')
     }
 }
 

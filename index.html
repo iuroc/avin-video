@@ -20,6 +20,7 @@
                 <a class="item-home item py-3" href="#/">主页</a>
                 <a class="item-type item py-3" href="#/type">分类</a>
                 <a class="item-female item py-3" href="#/female">女优</a>
+                <a class="item-female item py-3 item-search">搜索</a>
             </div>
         </div>
         <div class="body overflow-auto">
@@ -27,17 +28,24 @@
                 <div class="sticky-top p-3 shadow-sm type-list bg-white overflow-auto text-nowrap"></div>
                 <div class="p-4">
                     <div class="row video-list"></div>
+                    <div class="sticky-bottom page-change-tool pb-4 text-end">
+                        <a class="btn btn-success me-3 last-page">上一页</a>
+                        <a class="btn btn-primary next-page">下一页</a>
+                    </div>
+                    <div class="spinner-grow" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
-            </div>
-            <div class="poncon-video poncon-page" style="display: none;">
-                视频列表
             </div>
             <div class="poncon-type poncon-page" style="display: none;">
                 <div class="p-4">
                     <div class="row sub-type-list"></div>
-                    <div class="sticky-bottom pb-4 text-end">
-                        <button class="btn btn-success me-3">上一页</button>
-                        <button class="btn btn-primary">下一页</button>
+                    <div class="sticky-bottom page-change-tool pb-4 text-end">
+                        <a class="btn btn-success me-3 last-page">上一页</a>
+                        <a class="btn btn-primary next-page">下一页</a>
+                    </div>
+                    <div class="spinner-grow" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
             </div>
