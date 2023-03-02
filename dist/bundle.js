@@ -185,7 +185,7 @@ var querystring = require("querystring");
 require("hls.js");
 /** 配置信息 */
 var config = {
-    api: 'https://b532b01e67674081ae52faf978e192e1.apig.cn-south-1.huaweicloudapis.com',
+    api: 'https://9db16d0067c744feb0edef5e5b5bd6ec.apig.cn-south-1.huaweicloudapis.com',
     siteName: 'AVIN 视频',
     canPlay: false
 };
@@ -241,13 +241,14 @@ poncon.setPage('home', function (dom, args, pageData) {
     var nowTypeId = args[0] || '';
     var page = parseInt(args[1]) || 0;
     var argsTypeName = args[2] || '';
+    pageData.argsTypeName = argsTypeName;
     var nowEle = eleTypeList === null || eleTypeList === void 0 ? void 0 : eleTypeList.querySelector("[data-type-id=\"".concat(nowTypeId, "\"]"));
     /** 开头的分类选项卡，用于放置非主页原有分类标签 */
     var headTypeEle = eleTypeList.querySelector('.head-type');
     if (argsTypeName) {
         document.title = decodeURIComponent(argsTypeName) + ' - ' + config.siteName;
         if (headTypeEle)
-            headTypeEle.innerHTML = "<a class=\"btn btn-secondary\" data-type-id=\"".concat(nowTypeId, "\" href=\"#/home/").concat(nowTypeId, "\">").concat(decodeURIComponent(argsTypeName), "</a>");
+            headTypeEle.innerHTML = "<a class=\"btn btn-secondary\" data-type-id=\"".concat(nowTypeId, "\" href=\"#/home/").concat(nowTypeId, "/0/").concat(decodeURIComponent(argsTypeName), "\">").concat(decodeURIComponent(argsTypeName), "</a>");
     }
     else {
         document.title = (nowEle === null || nowEle === void 0 ? void 0 : nowEle.innerText) + ' - ' + config.siteName;
@@ -305,40 +306,51 @@ poncon.setPage('type', function (dom, args, pageData) {
     var page = parseInt((args && args[0])) || 0;
     loadSubTypeList(page, 24);
 });
+poncon.setPage('female', function (dom, args, pageData) {
+    var page = parseInt((args && args[0])) || 0;
+    loadSubTypeList(page, 24, 'female');
+});
 poncon.start();
 /**
  * 加载子类列表
  * @param page 页码 初始值为 0
  * @param pageSize 每页加载数量
+ * @param listType 列表类型，`type`: 子类，`female`：女优
  */
-function loadSubTypeList(page, pageSize) {
+function loadSubTypeList(page, pageSize, listType) {
     if (page === void 0) { page = 0; }
     if (pageSize === void 0) { pageSize = 24; }
+    if (listType === void 0) { listType = 'type'; }
     var postData = {
         uid: config.userInfo.user_id,
         session: config.userInfo.session,
         page: page + 1,
         page_size: pageSize
     };
+    var path = { type: '/video/label/type_list', female: '/video/label/performer_list' }[listType];
     var dataCacheName = JSON.stringify({
-        path: '/video/label/type_list',
+        path: path,
         postData: postData
     });
-    var listEle = document.querySelector('.poncon-type .sub-type-list');
+    var pageDom = {
+        type: document.querySelector('.poncon-type'),
+        female: document.querySelector('.poncon-female')
+    }[listType];
+    var listEle = pageDom.querySelector('.sub-type-list');
     listEle.innerHTML = '';
     if (dataCache[dataCacheName]) {
         runData(dataCache[dataCacheName]);
     }
     else {
         loading(false);
-        request('/video/label/type_list', postData, function (data) {
+        request(path, postData, function (data) {
             dataCache[dataCacheName] = data;
             runData(data);
             loading(true);
         });
     }
     function runData(data) {
-        var listEle = document.querySelector('.poncon-type .sub-type-list');
+        var listEle = pageDom.querySelector('.sub-type-list');
         var dataList = data.data;
         /** 是否允许加载下一页 */
         var loadNext = (dataList && dataList.length == pageSize);
@@ -358,9 +370,9 @@ function loadSubTypeList(page, pageSize) {
      * @param ifEnd 是否加载完成
      */
     function loading(ifEnd) {
-        var pageChangeToolEle = document.querySelector('.poncon-type .page-change-tool');
+        var pageChangeToolEle = pageDom.querySelector('.page-change-tool');
         pageChangeToolEle.style.display = ifEnd ? 'block' : 'none';
-        var loadingEle = document.querySelector('.poncon-type .spinner-grow');
+        var loadingEle = pageDom.querySelector('.spinner-grow');
         loadingEle.style.display = ifEnd ? 'none' : 'block';
     }
     /**
@@ -371,16 +383,16 @@ function loadSubTypeList(page, pageSize) {
     function changePageLink(loadLast, loadNext) {
         var lastPage = page == 0 ? 0 : page - 1;
         var nextPage = page + 1;
-        var lastPageEle = document.querySelector('.poncon-type .last-page');
-        var nextPageEle = document.querySelector('.poncon-type .next-page');
+        var lastPageEle = pageDom.querySelector('.last-page');
+        var nextPageEle = pageDom.querySelector('.next-page');
         if (loadLast) {
-            lastPageEle.href = "#/type/".concat(lastPage);
+            lastPageEle.href = "#/".concat(listType, "/").concat(lastPage);
             lastPageEle.classList.remove('disabled');
         }
         else
             lastPageEle.classList.add('disabled');
         if (loadNext) {
-            nextPageEle.href = "#/type/".concat(nextPage);
+            nextPageEle.href = "#/".concat(listType, "/").concat(nextPage);
             nextPageEle.classList.remove('disabled');
         }
         else
@@ -441,6 +453,9 @@ function loadVideoList(typeId, page, pageSize, keyword) {
     function runData(data) {
         dataCache[dataCacheName] = data; // 缓存数据
         var list = data.data.list;
+        if (!list) {
+            return;
+        }
         var html = (function (list) {
             var html = '';
             list.forEach(function (item) {
@@ -474,13 +489,13 @@ function loadVideoList(typeId, page, pageSize, keyword) {
         var lastPageEle = document.querySelector('.poncon-home .last-page');
         var nextPageEle = document.querySelector('.poncon-home .next-page');
         if (loadLast) {
-            lastPageEle.href = "#/home/".concat(typeId, "/").concat(lastPage);
+            lastPageEle.href = "#/home/".concat(typeId, "/").concat(lastPage, "/").concat(poncon.pages.home.data.argsTypeName);
             lastPageEle.classList.remove('disabled');
         }
         else
             lastPageEle.classList.add('disabled');
         if (loadNext) {
-            nextPageEle.href = "#/home/".concat(typeId, "/").concat(nextPage);
+            nextPageEle.href = "#/home/".concat(typeId, "/").concat(nextPage, "/").concat(poncon.pages.home.data.argsTypeName);
             nextPageEle.classList.remove('disabled');
         }
         else

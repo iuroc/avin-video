@@ -13,7 +13,7 @@ const config: {
     /** 用户是否已经和页面交互，该值可判断是否自动播放视频 */
     canPlay: boolean
 } = {
-    api: 'https://b532b01e67674081ae52faf978e192e1.apig.cn-south-1.huaweicloudapis.com',
+    api: 'https://9db16d0067c744feb0edef5e5b5bd6ec.apig.cn-south-1.huaweicloudapis.com',
     siteName: 'AVIN 视频',
     canPlay: false
 }
@@ -76,12 +76,13 @@ poncon.setPage('home', (dom, args, pageData) => {
     const nowTypeId = (args as string[])[0] || ''
     const page = parseInt((args as string[])[1]) || 0
     const argsTypeName = (args as string[])[2] || ''
+    pageData.argsTypeName = argsTypeName
     const nowEle = eleTypeList?.querySelector(`[data-type-id="${nowTypeId}"]`) as HTMLDivElement
     /** 开头的分类选项卡，用于放置非主页原有分类标签 */
     const headTypeEle = eleTypeList.querySelector('.head-type')
     if (argsTypeName) {
         document.title = decodeURIComponent(argsTypeName) + ' - ' + config.siteName
-        if (headTypeEle) headTypeEle.innerHTML = `<a class="btn btn-secondary" data-type-id="${nowTypeId}" href="#/home/${nowTypeId}">${decodeURIComponent(argsTypeName)}</a>`
+        if (headTypeEle) headTypeEle.innerHTML = `<a class="btn btn-secondary" data-type-id="${nowTypeId}" href="#/home/${nowTypeId}/0/${decodeURIComponent(argsTypeName)}">${decodeURIComponent(argsTypeName)}</a>`
     } else {
         document.title = nowEle?.innerText + ' - ' + config.siteName
     }
@@ -125,7 +126,7 @@ poncon.setPage('play', (dom, args, pageData) => {
             hls.loadSource(videoUrl)
             hls.attachMedia(videoEle)
         } else if (videoEle?.canPlayType('application/vnd.apple.mpegurl')) {
-            videoEle.src = videoUrl;
+            videoEle.src = videoUrl
         }
         if (config.canPlay) {
             videoEle?.play()
@@ -137,6 +138,11 @@ poncon.setPage('type', (dom, args, pageData) => {
     const page = parseInt((args && args[0]) as string) || 0
     loadSubTypeList(page, 24)
 })
+poncon.setPage('female', (dom, args, pageData) => {
+    const page = parseInt((args && args[0]) as string) || 0
+    loadSubTypeList(page, 24, 'female')
+})
+
 poncon.start()
 
 
@@ -144,25 +150,31 @@ poncon.start()
  * 加载子类列表
  * @param page 页码 初始值为 0
  * @param pageSize 每页加载数量
+ * @param listType 列表类型，`type`: 子类，`female`：女优
  */
-function loadSubTypeList(page: number = 0, pageSize: number = 24) {
+function loadSubTypeList(page: number = 0, pageSize: number = 24, listType: string = 'type') {
     const postData = {
         uid: config.userInfo.user_id,
         session: config.userInfo.session,
         page: page + 1,
         page_size: pageSize
     }
+    const path = { type: '/video/label/type_list', female: '/video/label/performer_list' }[listType] as string
     const dataCacheName = JSON.stringify({
-        path: '/video/label/type_list',
+        path: path,
         postData: postData
     })
-    const listEle = document.querySelector('.poncon-type .sub-type-list') as HTMLElement
+    const pageDom = {
+        type: document.querySelector('.poncon-type') as HTMLElement,
+        female: document.querySelector('.poncon-female') as HTMLElement
+    }[listType] as HTMLElement
+    const listEle = pageDom.querySelector('.sub-type-list') as HTMLElement
     listEle.innerHTML = ''
     if (dataCache[dataCacheName]) {
         runData(dataCache[dataCacheName])
     } else {
         loading(false)
-        request('/video/label/type_list', postData, (data) => {
+        request(path, postData, (data) => {
             dataCache[dataCacheName] = data
             runData(data)
             loading(true)
@@ -170,7 +182,7 @@ function loadSubTypeList(page: number = 0, pageSize: number = 24) {
     }
 
     function runData(data: any) {
-        const listEle = document.querySelector('.poncon-type .sub-type-list') as HTMLElement
+        const listEle = pageDom.querySelector('.sub-type-list') as HTMLElement
         const dataList = data.data
         /** 是否允许加载下一页 */
         const loadNext = (dataList && dataList.length == pageSize)
@@ -204,9 +216,9 @@ function loadSubTypeList(page: number = 0, pageSize: number = 24) {
      * @param ifEnd 是否加载完成
      */
     function loading(ifEnd: boolean) {
-        const pageChangeToolEle = document.querySelector('.poncon-type .page-change-tool') as HTMLElement
+        const pageChangeToolEle = pageDom.querySelector('.page-change-tool') as HTMLElement
         pageChangeToolEle.style.display = ifEnd ? 'block' : 'none'
-        const loadingEle = document.querySelector('.poncon-type .spinner-grow') as HTMLElement
+        const loadingEle = pageDom.querySelector('.spinner-grow') as HTMLElement
         loadingEle.style.display = ifEnd ? 'none' : 'block'
     }
 
@@ -218,15 +230,16 @@ function loadSubTypeList(page: number = 0, pageSize: number = 24) {
     function changePageLink(loadLast: boolean, loadNext: boolean) {
         const lastPage = page == 0 ? 0 : page - 1
         const nextPage = page + 1
-        const lastPageEle = document.querySelector('.poncon-type .last-page') as HTMLLinkElement
-        const nextPageEle = document.querySelector('.poncon-type .next-page') as HTMLLinkElement
+        const lastPageEle = pageDom.querySelector('.last-page') as HTMLLinkElement
+        const nextPageEle = pageDom.querySelector('.next-page') as HTMLLinkElement
+
         if (loadLast) {
-            lastPageEle.href = `#/type/${lastPage}`
+            lastPageEle.href = `#/${listType}/${lastPage}`
             lastPageEle.classList.remove('disabled')
         }
         else lastPageEle.classList.add('disabled')
         if (loadNext) {
-            nextPageEle.href = `#/type/${nextPage}`
+            nextPageEle.href = `#/${listType}/${nextPage}`
             nextPageEle.classList.remove('disabled')
         } else nextPageEle.classList.add('disabled')
     }
@@ -281,6 +294,9 @@ function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24, 
     function runData(data: any) {
         dataCache[dataCacheName] = data // 缓存数据
         const list = data.data.list as any[]
+        if (!list) {
+            return
+        }
         const html = ((list) => {
             let html = ''
             list.forEach((item: {
@@ -346,12 +362,12 @@ function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24, 
         const lastPageEle = document.querySelector('.poncon-home .last-page') as HTMLLinkElement
         const nextPageEle = document.querySelector('.poncon-home .next-page') as HTMLLinkElement
         if (loadLast) {
-            lastPageEle.href = `#/home/${typeId}/${lastPage}`
+            lastPageEle.href = `#/home/${typeId}/${lastPage}/${poncon.pages.home.data.argsTypeName}`
             lastPageEle.classList.remove('disabled')
         }
         else lastPageEle.classList.add('disabled')
         if (loadNext) {
-            nextPageEle.href = `#/home/${typeId}/${nextPage}`
+            nextPageEle.href = `#/home/${typeId}/${nextPage}/${poncon.pages.home.data.argsTypeName}`
             nextPageEle.classList.remove('disabled')
         } else nextPageEle.classList.add('disabled')
     }
