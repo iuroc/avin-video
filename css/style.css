@@ -29,6 +29,14 @@ a {
     box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
 }
 
+.hover-shadow img {
+    transition: transform .5s;
+}
+
+.hover-shadow:hover img {
+    transform: scale(1.5, 1.5);
+}
+
 .root {
     position: fixed;
     top: 0;

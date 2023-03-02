@@ -41,32 +41,37 @@ poncon.setPage('home', function (dom, args, pageData) {
     var eleTypeList = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
     if (!pageData.load) {
         eleTypeList.innerHTML = (function () {
-            var html = '';
+            var html = '<div class="d-inline-block head-type"></div>';
             pageData.types.forEach(function (type) {
                 html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.typeId, "\" href=\"#/home/").concat(type.typeId, "\">").concat(type.name, "</a>");
             });
             return html;
         })();
     }
-    var nowTypeId = args[0] || '';
     var eles = eleTypeList === null || eleTypeList === void 0 ? void 0 : eleTypeList.querySelectorAll('[data-type-id]');
     eles.forEach(function (ele) {
         ele.classList.remove('btn-secondary');
         ele.classList.add('btn-outline-secondary');
-        if (!pageData.load) {
-            ele.addEventListener('click', function () {
-                poncon.pages.home.data.load = false;
-            });
-        }
     });
     eleTypeList.addEventListener('wheel', function (event) {
         event.preventDefault();
         animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
     });
+    var nowTypeId = args[0] || '';
+    var argsTypeName = args[1] || '';
     var nowEle = eleTypeList === null || eleTypeList === void 0 ? void 0 : eleTypeList.querySelector("[data-type-id=\"".concat(nowTypeId, "\"]"));
+    /** 开头的分类选项卡，用于放置非主页原有分类标签 */
+    var headTypeEle = eleTypeList.querySelector('.head-type');
+    if (argsTypeName) {
+        document.title = decodeURIComponent(argsTypeName) + ' - ' + config.siteName;
+        if (headTypeEle)
+            headTypeEle.innerHTML = "<a class=\"btn btn-secondary\" data-type-id=\"".concat(nowTypeId, "\" href=\"#/home/").concat(nowTypeId, "\">").concat(decodeURIComponent(argsTypeName), "</a>");
+    }
+    else {
+        document.title = (nowEle === null || nowEle === void 0 ? void 0 : nowEle.innerText) + ' - ' + config.siteName;
+    }
     (_a = nowEle === null || nowEle === void 0 ? void 0 : nowEle.classList) === null || _a === void 0 ? void 0 : _a.remove('btn-outline-secondary');
     (_b = nowEle === null || nowEle === void 0 ? void 0 : nowEle.classList) === null || _b === void 0 ? void 0 : _b.add('btn-secondary');
-    document.title = (nowEle === null || nowEle === void 0 ? void 0 : nowEle.innerText) + ' - ' + config.siteName;
     pageData.load = true;
     loadVideoList(nowTypeId, 0, 24);
 });
@@ -115,67 +120,59 @@ poncon.setPage('play', function (dom, args, pageData) {
     }
 });
 poncon.setPage('type', function (dom, args, pageData) {
+    var page = parseInt((args && args[0])) || 0;
+    loadSubTypeList(page, 24);
+});
+poncon.start();
+/**
+ * 加载子类列表
+ * @param page 页码 初始值为 0
+ * @param pageSize 每页加载数量
+ */
+function loadSubTypeList(page, pageSize) {
+    if (page === void 0) { page = 0; }
+    if (pageSize === void 0) { pageSize = 24; }
     var postData = {
         uid: config.userInfo.user_id,
         session: config.userInfo.session,
-        is_review: 0,
-        page: 1,
-        page_size: 32
+        page: page + 1,
+        page_size: pageSize
     };
     var dataCacheName = JSON.stringify({
-        path: '/video/label/type_group',
+        path: '/video/label/type_list',
         postData: postData
     });
     if (dataCache[dataCacheName]) {
         runData(dataCache[dataCacheName]);
     }
     else {
-        request('/video/label/type_group', postData, function (data) {
+        request('/video/label/type_list', postData, function (data) {
             dataCache[dataCacheName] = data;
             runData(data);
         });
     }
     function runData(data) {
-        var _a, _b;
-        var typeList = data.data;
-        var typeListEle = dom === null || dom === void 0 ? void 0 : dom.querySelector('.type-list');
-        if (!pageData.load) {
-            typeListEle.innerHTML = (function (typeList) {
-                var html = '';
-                typeList.forEach(function (type) {
-                    html += "<a class=\"btn btn-outline-secondary\" data-type-id=\"".concat(type.id, "\" href=\"#/type/").concat(type.id, "\">").concat(type.name, "</a>");
-                });
-                return html;
-            })(typeList);
-            typeListEle.addEventListener('wheel', function (event) {
-                event.preventDefault();
-                animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600);
+        var listEle = document.querySelector('.poncon-type .sub-type-list');
+        var dataList = data.data;
+        listEle.innerHTML = (function (dataList) {
+            var html = '';
+            dataList.forEach(function (item) {
+                html += "\n                <div class=\"col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow card-body text-center ls-1\" data-type-id=\"".concat(item.id, "\" href=\"#/home/").concat(item.id, "/").concat(item.name, "\">\n                        <div class=\"h5 single-line\">").concat(item.name, "</div>\n                        <div class=\"text-primary\">\u5171 ").concat(item.video_num, " \u4E2A\u89C6\u9891</div>\n                    </a>\n                </div>");
             });
-        }
-        var typeId = (args && args[0]) || typeList[0].id;
-        var typeEles = typeListEle.querySelectorAll('[data-type-id]');
-        typeEles.forEach(function (ele) {
-            ele.classList.remove('btn-secondary');
-            ele.classList.add('btn-outline-secondary');
-        });
-        var nowTypeEle = typeListEle.querySelector("[data-type-id=\"".concat(typeId, "\"]"));
-        if (!nowTypeEle)
-            return;
-        (_a = nowTypeEle === null || nowTypeEle === void 0 ? void 0 : nowTypeEle.classList) === null || _a === void 0 ? void 0 : _a.remove('btn-outline-secondary');
-        (_b = nowTypeEle === null || nowTypeEle === void 0 ? void 0 : nowTypeEle.classList) === null || _b === void 0 ? void 0 : _b.add('btn-secondary');
-        pageData.load = true;
+            return html;
+        })(dataList);
     }
-});
-poncon.start();
+}
 /**
  * 加载视频列表
  * @param typeId 分类 ID
  * @param page 页码 初始值为 0
  * @param pageSize 每页加载数量
  */
-function loadVideoList(typeId, page, pageSize) {
+function loadVideoList(typeId, page, pageSize, keyword) {
     if (page === void 0) { page = 0; }
     if (pageSize === void 0) { pageSize = 24; }
+    if (keyword === void 0) { keyword = ''; }
     var listEle = document.querySelector('.poncon-home .video-list');
     listEle.innerHTML = '';
     var postData = {
@@ -184,6 +181,7 @@ function loadVideoList(typeId, page, pageSize) {
         is_review: 0,
         is_new: 1,
         v: 0,
+        search: keyword,
         label_id: typeId,
         page: page + 1,
         page_size: pageSize
@@ -212,7 +210,7 @@ function loadVideoList(typeId, page, pageSize) {
             list.forEach(function (item) {
                 if (!item.href)
                     return;
-                html += "\n                <div class=\"col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow h-100\" href=\"#/play/".concat(item.id, "\">\n                        <div class=\"ratio ratio-16x9\">\n                            <img src=\"").concat(changeToHttp(item.href_image), "\" alt=\"").concat(item.name, "\" class=\"card-img-top\">\n                        </div>\n                        <div class=\"card-body d-flex flex-column ls-1\">\n                            <div class=\"h5 card-title multi-line videoTitle\">").concat(item.name, "</div>\n                            <div class=\"card-text small text-muted d-flex mb-2 mt-auto\">\n                                <span class=\"me-auto\"><span class=\"text-success\">").concat(parseDuration(item.duration), "</span></span>\n                                <span>").concat(item.performer, "</span>\n                            </div>\n                            <div class=\"publish-time small text-muted\">").concat(item.update_time, "</div>\n                        </div>\n                    </a>\n                </div>");
+                html += "\n                <div class=\"col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4\">\n                    <a class=\"card hover-shadow h-100\" href=\"#/play/".concat(item.id, "\">\n                        <div class=\"ratio ratio-16x9\">\n                            <div class=\"img-box overflow-hidden\">\n                                <img src=\"").concat(changeToHttp(item.href_image), "\" alt=\"").concat(item.name, "\" class=\"card-img-top\">\n                            </div>\n                        </div>\n                        <div class=\"card-body d-flex flex-column ls-1\">\n                            <div class=\"h5 card-title multi-line videoTitle\">").concat(item.name, "</div>\n                            <div class=\"card-text small text-muted d-flex mb-2 mt-auto\">\n                                <span class=\"me-auto\"><span class=\"text-success\">").concat(parseDuration(item.duration), "</span></span>\n                                <span>").concat(item.performer, "</span>\n                            </div>\n                            <div class=\"publish-time small text-muted\">").concat(item.update_time, "</div>\n                        </div>\n                    </a>\n                </div>");
             });
             return html;
         })(list);

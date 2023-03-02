@@ -58,34 +58,37 @@ poncon.setPage('home', (dom, args, pageData) => {
     const eleTypeList = dom?.querySelector('.type-list') as HTMLElement
     if (!pageData.load) {
         eleTypeList.innerHTML = ((): string => {
-            let html = ''
+            let html = '<div class="d-inline-block head-type"></div>'
             pageData.types.forEach((type: { typeId: number | null, name: string }) => {
                 html += `<a class="btn btn-outline-secondary" data-type-id="${type.typeId}" href="#/home/${type.typeId}">${type.name}</a>`
             })
             return html
         })()
     }
-    const nowTypeId = (args as string[])[0] || ''
+
     const eles = eleTypeList?.querySelectorAll<HTMLElement>('[data-type-id]')
     eles.forEach(ele => {
         ele.classList.remove('btn-secondary')
         ele.classList.add('btn-outline-secondary')
-        if (!pageData.load) {
-            ele.addEventListener('click', () => {
-                poncon.pages.home.data.load = false
-            })
-        }
     })
     eleTypeList.addEventListener('wheel', function (event) {
         event.preventDefault()
         animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600)
     })
+    const nowTypeId = (args as string[])[0] || ''
+    const argsTypeName = (args as string[])[1] || ''
     const nowEle = eleTypeList?.querySelector(`[data-type-id="${nowTypeId}"]`) as HTMLDivElement
+    /** 开头的分类选项卡，用于放置非主页原有分类标签 */
+    const headTypeEle = eleTypeList.querySelector('.head-type')
+    if (argsTypeName) {
+        document.title = decodeURIComponent(argsTypeName) + ' - ' + config.siteName
+        if (headTypeEle) headTypeEle.innerHTML = `<a class="btn btn-secondary" data-type-id="${nowTypeId}" href="#/home/${nowTypeId}">${decodeURIComponent(argsTypeName)}</a>`
+    } else {
+        document.title = nowEle?.innerText + ' - ' + config.siteName
+    }
     nowEle?.classList?.remove('btn-outline-secondary')
     nowEle?.classList?.add('btn-secondary')
-    document.title = nowEle?.innerText + ' - ' + config.siteName
     pageData.load = true
-    const listEle = document.querySelector('.poncon-home .video-list') as HTMLElement
     loadVideoList(nowTypeId, 0, 24)
 })
 poncon.setPage('play', (dom, args, pageData) => {
@@ -132,84 +135,62 @@ poncon.setPage('play', (dom, args, pageData) => {
 })
 
 poncon.setPage('type', (dom, args, pageData) => {
+    const page = parseInt((args && args[0]) as string) || 0
+    loadSubTypeList(page, 24)
+})
+poncon.start()
+
+
+/**
+ * 加载子类列表
+ * @param page 页码 初始值为 0
+ * @param pageSize 每页加载数量
+ */
+function loadSubTypeList(page: number = 0, pageSize: number = 24) {
     const postData = {
         uid: config.userInfo.user_id,
         session: config.userInfo.session,
-        is_review: 0,
-        page: 1,
-        page_size: 32
+        page: page + 1,
+        page_size: pageSize
     }
     const dataCacheName = JSON.stringify({
-        path: '/video/label/type_group',
+        path: '/video/label/type_list',
         postData: postData
     })
     if (dataCache[dataCacheName]) {
         runData(dataCache[dataCacheName])
     } else {
-        request('/video/label/type_group', postData, (data) => {
+        request('/video/label/type_list', postData, (data) => {
             dataCache[dataCacheName] = data
             runData(data)
         })
     }
+
     function runData(data: any) {
-        const typeList = data.data
-        const typeListEle = dom?.querySelector('.type-list') as HTMLDivElement
-        if (!pageData.load) {
-            typeListEle.innerHTML = ((typeList) => {
-                let html = ''
-                typeList.forEach((type: {
-                    id: number,
-                    name: string
-                }) => {
-                    html += `<a class="btn btn-outline-secondary" data-type-id="${type.id}" href="#/type/${type.id}">${type.name}</a>`
-                })
-                return html
-            })(typeList)
-            typeListEle.addEventListener('wheel', function (event) {
-                event.preventDefault()
-                animateScrollLeft(this, this.scrollLeft + 200 * (event.deltaY > 0 ? 1 : -1), 600)
-            })
-        }
-        /** 当前父类 ID */
-        const typeId = (args && args[0]) || typeList[0].id
-        /** 选项卡按钮列表 */
-        const typeEles = typeListEle.querySelectorAll<HTMLElement>('[data-type-id]')
-        typeEles.forEach(ele => {
-            ele.classList.remove('btn-secondary')
-            ele.classList.add('btn-outline-secondary')
-        })
-        /** 当前选项卡按钮 */
-        const nowTypeEle = typeListEle.querySelector(`[data-type-id="${typeId}"]`)
-        if (!nowTypeEle) return
-        nowTypeEle?.classList?.remove('btn-outline-secondary')
-        nowTypeEle?.classList?.add('btn-secondary')
-        loadSubTypeList(typeId, 0, 24)
-        pageData.load = true
-    }
-})
-poncon.start()
-
-/**
- * 加载子类列表
- * @param typeId 父类 ID
- */
-function loadSubTypeList(typeId: number, page: number = 0, pageSize: number = 24) {
-    request('/video/label/type_list', {
-        uid: config.userInfo.user_id,
-        session: config.userInfo.session,
-        is_review: 0,
-        type_group_id: typeId,
-        page: page + 1,
-        page_size: pageSize,
-    }, (data) => {
-        const list = data.data
-        const html = ((list) => {
+        const listEle = document.querySelector('.poncon-type .sub-type-list') as HTMLElement
+        const dataList = data.data
+        listEle.innerHTML = ((dataList) => {
             let html = ''
-            html += ``
-        })(list)
-    })
+            dataList.forEach((item: {
+                /** 子类 ID */
+                id: number,
+                /** 子类名称 */
+                name: string,
+                /** 子类视频数量 */
+                video_num: number
+            }) => {
+                html += `
+                <div class="col-xl-3 col-lg-4 col-sm-6 mb-4">
+                    <a class="card hover-shadow card-body text-center ls-1" data-type-id="${item.id}" href="#/home/${item.id}/${item.name}">
+                        <div class="h5 single-line">${item.name}</div>
+                        <div class="text-primary">共 ${item.video_num} 个视频</div>
+                    </a>
+                </div>`
+            })
+            return html
+        })(dataList)
+    }
 }
-
 /**
  * 加载视频列表
  * @param typeId 分类 ID
@@ -271,7 +252,9 @@ function loadVideoList(typeId: string, page: number = 0, pageSize: number = 24, 
                 <div class="col-xxl-3 col-xl-3 col-lg-4 col-sm-6 mb-4">
                     <a class="card hover-shadow h-100" href="#/play/${item.id}">
                         <div class="ratio ratio-16x9">
-                            <img src="${changeToHttp(item.href_image)}" alt="${item.name}" class="card-img-top">
+                            <div class="img-box overflow-hidden">
+                                <img src="${changeToHttp(item.href_image)}" alt="${item.name}" class="card-img-top">
+                            </div>
                         </div>
                         <div class="card-body d-flex flex-column ls-1">
                             <div class="h5 card-title multi-line videoTitle">${item.name}</div>
