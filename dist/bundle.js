@@ -182,7 +182,8 @@ exports.encode = exports.stringify = require('./encode');
 exports.__esModule = true;
 var ponconjs_1 = require("ponconjs");
 var querystring = require("querystring");
-require("hls.js");
+var hlsClass = require("hls.js");
+var Hls = hlsClass;
 /** 配置信息 */
 var config = {
     api: 'https://9db16d0067c744feb0edef5e5b5bd6ec.apig.cn-south-1.huaweicloudapis.com',

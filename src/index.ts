@@ -1,7 +1,9 @@
 import Poncon from 'ponconjs'
 import * as querystring from 'querystring'
-import 'hls.js'
-declare const Hls: any
+import hlsClass = require('hls.js')
+
+const Hls: any = hlsClass
+
 /** 配置信息 */
 const config: {
     /** 后端请求接口地址 */
