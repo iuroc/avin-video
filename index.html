@@ -19,7 +19,7 @@
                 <a class="item-home item py-3" href="#/">主页</a>
                 <a class="item-type item py-3" href="#/type">分类</a>
                 <a class="item-female item py-3" href="#/female">女优</a>
-                <a class="item-female item py-3 item-search">搜索</a>
+                <a class="item-search item py-3">搜索</a>
             </div>
             <div class="text-center d-block border-top pt-3">
                 <a href="https://apee.top" target="_blank" class="me-3 text-muted">Apee.top</a>
@@ -30,7 +30,7 @@
             <a class="item-home item py-3" href="#/">主页</a>
             <a class="item-type item py-3" href="#/type">分类</a>
             <a class="item-female item py-3" href="#/female">女优</a>
-            <a class="item-female item py-3 item-search">搜索</a>
+            <a class="item-search item py-3">搜索</a>
         </div>
         <div class="body overflow-auto">
             <div class="poncon-home poncon-page" style="display: none;">
@@ -71,15 +71,35 @@
                 </div>
             </div>
             <div class="poncon-play poncon-page" style="display: none;">
-                <div class="sticky-top p-3 shadow-sm bg-white videoTitle ls-1 h5 mb-0 single-line"></div>
+                <div class="sticky-top p-3 shadow-sm bg-white videoTitle ls-1 h5 mb-0 single-line copy-text" data-clipboard-target=".poncon-play .videoTitle"></div>
                 <div class="p-lg-4">
-                    <div class="video-box mx-auto ratio ratio-16x9" style="max-width: 1000px;">
-                        <video controls autoplay class="shadow-sm"></video>
+                    <div class="mx-auto" style="max-width: 1000px;">
+                        <div class="video-box ratio ratio-16x9 mb-4">
+                            <video controls autoplay class="shadow-sm"></video>
+                        </div>
+                        <button class="btn btn-success me-3 m3u8-url copy-text" onclick="alert('复制成功')">复制 M3U8 地址</button>
+                        <button class="btn btn-outline-danger reload">重置播放</button>
                     </div>
                 </div>
             </div>
             <div class="poncon-about poncon-page" style="display: none;">
                 关于我们
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="search-modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h1 class="modal-title fs-5">影片搜索</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="input-group">
+                        <input type="text" class="form-control keyword" placeholder="请输入搜索关键词">
+                        <button class="btn btn-success search">搜索</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
